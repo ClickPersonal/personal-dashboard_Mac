@@ -275,7 +275,789 @@ const getPriorityColor = (priority: string) => {
 }
 
 export default function ProjectDetail() {
-  // const { id } = useParams() // Currently using mock data
+  const { id: projectId } = useParams()
+  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'files' | 'timeline' | 'comments'>('overview')
+  const [files, setFiles] = useState<any[]>([])
+const [loadingFiles, setLoadingFiles] = useState(true)
+const [errorFiles, setErrorFiles] = useState("")
+
+// Realtime sync for files
+useEffect(() => {
+  if (!projectId) return;
+  const channel = supabase
+    .channel('realtime-files-' + projectId)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'files', filter: `project_id=eq.${projectId}` },
+      payload => {
+        // Refetch files on any insert/update/delete
+        supabase.from('files').select('*').eq('project_id', projectId).then(({ data, error }) => {
+          if (!error) setFiles(data || []);
+        });
+      }
+    )
+    .subscribe();
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [projectId]);
+
+// Notifiche e reminder
+const [notifications, setNotifications] = useState<{id:string, message:string, type:'info'|'success'|'warning'|'error', read:boolean}[]>([])
+function addNotification(message:string, type:'info'|'success'|'warning'|'error' = 'info') {
+  setNotifications(prev => [...prev, { id: Math.random().toString(36).slice(2), message, type, read: false }])
+}
+// Reminder: notifica se ci sono task in scadenza entro 3 giorni\ nuseEffect(() => {
+  const soon = tasks.filter(t => t.dueDate && (new Date(t.dueDate).getTime() - Date.now()) < 3*24*60*60*1000 && (new Date(t.dueDate).getTime() - Date.now()) > 0)
+  if (soon.length > 0) {
+    addNotification(`Hai ${soon.length} task in scadenza nei prossimi 3 giorni!`, 'warning')
+  }
+}, [tasks])
+  
+  // Fetch files from Supabase
+  useEffect(() => {
+    async function fetchFiles() {
+      setLoadingFiles(true)
+      setErrorFiles("")
+      const { data, error } = await supabase.from('files').select('*').eq('project_id', projectId)
+      if (error) setErrorFiles(error.message)
+      setFiles(data || [])
+      setLoadingFiles(false)
+    }
+    if (projectId) fetchFiles()
+  }, [projectId])
+
+  return (
+    <div className="space-y-6">
+      {/* Notifiche */}
+      {notifications.length > 0 && (
+        <div className="space-y-2">
+          {notifications.filter(n => !n.read).map(n => (
+            <div key={n.id} className={`rounded p-3 text-sm font-medium shadow ${n.type === 'warning' ? 'bg-yellow-100 text-yellow-800' : n.type === 'success' ? 'bg-green-100 text-green-800' : n.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
+              {n.message}
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Link to="/sokey-studio">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Torna ai Progetti
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">{projectData.name}</h1>
+            <p className="text-muted-foreground mt-1">{projectData.type} • {projectData.location}</p>
+          </div>
+        </div>
+        <div className="flex space-x-3">
+          <Button variant="outline">
+            <Share className="w-4 h-4 mr-2" />
+            Condividi
+          </Button>
+          <Button>
+            <Edit className="w-4 h-4 mr-2" />
+            Modifica
+          </Button>
+        </div>
+      </div>
+
+      {/* Project Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Budget</p>
+                <p className="text-2xl font-bold text-foreground mt-1">
+                  {formatCurrency(projectData.budget)}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-blue-50">
+                <DollarSign className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Importo Finale</p>
+                <p className="text-2xl font-bold text-green-600 mt-1">
+                  {formatCurrency(projectData.finalAmount)}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-green-50">
+                <DollarSign className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Margine</p>
+                <p className="text-2xl font-bold text-purple-600 mt-1">
+                  {projectData.marginPercentage.toFixed(1)}%
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-purple-50">
+                <DollarSign className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">ROI</p>
+                <p className="text-2xl font-bold text-orange-600 mt-1">
+                  {projectData.roi}%
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-orange-50">
+                <DollarSign className="w-6 h-6 text-orange-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Rating</p>
+                <div className="flex items-center space-x-1 mt-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-5 h-5 ${
+                        i < projectData.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-yellow-50">
+                <Star className="w-6 h-6 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-border">
+        <nav className="flex space-x-8">
+          {[
+            { id: 'overview', label: 'Panoramica', icon: Eye },
+            { id: 'tasks', label: 'Task', icon: CheckCircle },
+            { id: 'files', label: 'File', icon: FileText },
+            { id: 'timeline', label: 'Timeline', icon: Clock },
+            { id: 'comments', label: 'Commenti', icon: MessageSquare },
+          ].map((tab) => {
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-studio-500 text-studio-600'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+      </div>
+
+      {/* Content */}
+      {activeTab === 'overview' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Project Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Dettagli Progetto</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-foreground mb-1">Descrizione</p>
+                <p className="text-sm text-muted-foreground">{projectData.description}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground mb-1">Data Inizio</p>
+                  <p className="text-sm text-muted-foreground">{formatDate(projectData.startDate)}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground mb-1">Data Fine</p>
+                  <p className="text-sm text-muted-foreground">{formatDate(projectData.endDate)}</p>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium text-foreground mb-1">Stato</p>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(projectData.status)}`}>
+                  {projectData.status}
+                </span>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium text-foreground mb-2">Team</p>
+                <div className="space-y-1">
+                  {projectData.team.map((member, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-foreground">{member}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium text-foreground mb-2">Attrezzatura</p>
+                <div className="flex flex-wrap gap-2">
+                  {projectData.equipment.map((item, index) => (
+                    <span key={index} className="px-2 py-1 rounded-full text-xs bg-studio-50 text-studio-700">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Client Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Informazioni Cliente</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 rounded-lg bg-studio-50">
+                  <User className="w-6 h-6 text-studio-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">{projectData.client.name}</p>
+                  <p className="text-sm text-muted-foreground">{projectData.client.company}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground">{projectData.client.email}</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground">{projectData.client.phone}</span>
+                </div>
+              </div>
+              
+              <div className="pt-4 border-t border-border">
+                <Link to={`/clients/${projectData.client.id}`}>
+                  <Button variant="outline" className="w-full">
+                    <Eye className="w-4 h-4 mr-2" />
+                    Visualizza Cliente
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Services & Pricing */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Servizi e Prezzi</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {projectData.services.map((service, index) => (
+                  <div key={index} className="flex items-center justify-between py-2">
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle className={`w-4 h-4 ${
+                        service.included ? 'text-green-600' : 'text-gray-300'
+                      }`} />
+                      <span className={`text-sm ${
+                        service.included ? 'text-foreground' : 'text-muted-foreground'
+                      }`}>
+                        {service.name}
+                      </span>
+                    </div>
+                    <span className={`text-sm font-medium ${
+                      service.included ? 'text-foreground' : 'text-muted-foreground'
+                    }`}>
+                      {formatCurrency(service.price)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="pt-4 border-t border-border mt-4">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-foreground">Totale Progetto</span>
+                  <span className="font-bold text-lg text-foreground">
+                    {formatCurrency(projectData.finalAmount)}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Deliverables */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Deliverable</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-4 rounded-lg bg-studio-50">
+                  <Camera className="w-8 h-8 text-studio-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-foreground">{projectData.deliverables.photos}</p>
+                  <p className="text-sm text-muted-foreground">Foto Totali</p>
+                </div>
+                <div className="text-center p-4 rounded-lg bg-purple-50">
+                  <Video className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-foreground">{projectData.deliverables.videos}</p>
+                  <p className="text-sm text-muted-foreground">Video</p>
+                </div>
+                <div className="text-center p-4 rounded-lg bg-green-50">
+                  <Edit className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-foreground">{projectData.deliverables.edited}</p>
+                  <p className="text-sm text-muted-foreground">Foto Elaborate</p>
+                </div>
+                <div className="text-center p-4 rounded-lg bg-orange-50">
+                  <Archive className="w-8 h-8 text-orange-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-foreground">{projectData.deliverables.raw}</p>
+                  <p className="text-sm text-muted-foreground">File Raw</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'tasks' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-foreground">Task del Progetto</h2>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Nuovo Task
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            {tasks.map((task) => {
+              const TaskIcon = getTaskIcon(task.category)
+              
+              return (
+                <Card key={task.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start space-x-4">
+                      <div className={`p-3 rounded-lg ${getTaskColor(task.category)}`}>
+                        <TaskIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-foreground">{task.title}</h3>
+                          <div className="flex items-center space-x-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                              {task.priority}
+                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                              {task.status}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <p className="text-sm text-muted-foreground mb-3">{task.description}</p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="font-medium text-foreground mb-1">Assegnato a:</p>
+                            <p className="text-muted-foreground">{task.assignee}</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground mb-1">Scadenza:</p>
+                            <p className="text-muted-foreground">{formatDate(task.dueDate)}</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground mb-1">Completato:</p>
+                            <p className="text-muted-foreground">
+                              {task.completedDate ? formatDate(task.completedDate) : 'In corso'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'files' && (
+  <div className="space-y-6">
+    <div className="flex items-center justify-between">
+      <h2 className="text-xl font-semibold text-foreground">File del Progetto</h2>
+      <Button>
+        <Upload className="w-4 h-4 mr-2" />
+        Carica File
+      </Button>
+    </div>
+    {loadingFiles ? (
+      <div className="py-8 text-center text-muted-foreground">Caricamento file...</div>
+    ) : errorFiles ? (
+      <div className="py-8 text-center text-red-500">Errore: {errorFiles}</div>
+    ) : files.length === 0 ? (
+      <div className="py-8 text-center text-muted-foreground">Nessun file trovato.</div>
+    ) : (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {files.map((file) => {
+        const FileIcon = getFileIcon(file.type)
+        return (
+          <Card key={file.id} className="card-hover">
+            <CardContent className="p-6">
+              <div className="flex items-start space-x-4 mb-4">
+                <div className="p-3 rounded-lg bg-studio-50">
+                  <FileIcon className="w-6 h-6 text-studio-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-foreground truncate">{file.name}</h3>
+                  <p className="text-sm text-muted-foreground">{file.size}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Caricato il {formatDate(file.uploadDate)}
+                  </p>
+                </div>
+              </div>
+              <div className="mb-4">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(file.status)}`}>
+                  {file.status}
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <Button size="sm" variant="outline" className="flex-1">
+                  <Eye className="w-4 h-4 mr-1" />
+                  Visualizza
+                </Button>
+                <Button size="sm" variant="outline">
+                  <Download className="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="outline">
+                  <LinkIcon className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
+    </div>
+    )}
+  </div>
+)}
+
+      {activeTab === 'timeline' && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold text-foreground">Timeline del Progetto</h2>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                {projectData.timeline.map((event, index) => (
+                  <div key={index} className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className={`w-4 h-4 rounded-full ${
+                        event.status === 'completed' ? 'bg-green-500' : 'bg-gray-300'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-foreground">{event.event}</h3>
+                        <span className="text-sm text-muted-foreground">{event.time}</span>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      {event.status === 'completed' ? (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <Clock className="w-5 h-5 text-gray-400" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'comments' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-foreground">Commenti e Feedback</h2>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Nuovo Commento
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            {comments.map((comment) => (
+              <Card key={comment.id}>
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 rounded-lg bg-studio-50">
+                      <User className="w-5 h-5 text-studio-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <h3 className="font-semibold text-foreground">{comment.author}</h3>
+                          <p className="text-sm text-muted-foreground">{comment.role}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">{formatDate(comment.date)}</p>
+                          {comment.rating && (
+                            <div className="flex items-center space-x-1 mt-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-4 h-4 ${
+                                    i < comment.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-sm text-foreground">{comment.content}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+import { useEffect } from 'react'
+import { useParams } from 'react-router-dom'
+import { supabase } from '@/lib/supabase'
+
+const tasks = [
+  {
+    id: '1',
+    title: 'Sopralluogo location',
+    description: 'Visita alla villa per pianificare le riprese',
+    status: 'completed',
+    assignee: 'Roberto',
+    dueDate: '2023-08-20',
+    completedDate: '2023-08-18',
+    priority: 'high',
+    category: 'planning'
+  },
+  {
+    id: '2',
+    title: 'Preparazione attrezzatura',
+    description: 'Controllo e preparazione di tutta la strumentazione',
+    status: 'completed',
+    assignee: 'Team',
+    dueDate: '2023-09-14',
+    completedDate: '2023-09-14',
+    priority: 'high',
+    category: 'preparation'
+  },
+  {
+    id: '3',
+    title: 'Shooting matrimonio',
+    description: 'Servizio fotografico e video durante l\'evento',
+    status: 'completed',
+    assignee: 'Team',
+    dueDate: '2023-09-16',
+    completedDate: '2023-09-16',
+    priority: 'critical',
+    category: 'production'
+  },
+  {
+    id: '4',
+    title: 'Post-produzione foto',
+    description: 'Editing e ritocco delle foto selezionate',
+    status: 'completed',
+    assignee: 'Roberto',
+    dueDate: '2023-09-25',
+    completedDate: '2023-09-23',
+    priority: 'high',
+    category: 'post-production'
+  },
+  {
+    id: '5',
+    title: 'Montaggio video',
+    description: 'Editing del video highlight del matrimonio',
+    status: 'completed',
+    assignee: 'Sara',
+    dueDate: '2023-09-30',
+    completedDate: '2023-09-28',
+    priority: 'high',
+    category: 'post-production'
+  },
+  {
+    id: '6',
+    title: 'Consegna finale',
+    description: 'Upload su cloud e invio link al cliente',
+    status: 'completed',
+    assignee: 'Roberto',
+    dueDate: '2023-10-01',
+    completedDate: '2023-09-30',
+    priority: 'medium',
+    category: 'delivery'
+  }
+]
+
+const files = [
+  {
+    id: '1',
+    name: 'Matrimonio_Laura_Giuseppe_Highlights.mp4',
+    type: 'video',
+    size: '2.1 GB',
+    uploadDate: '2023-09-28',
+    status: 'approved',
+    url: '#',
+    thumbnail: '/api/placeholder/150/100',
+    category: 'final'
+  },
+  {
+    id: '2',
+    name: 'Cerimonia_Foto_Selezionate.zip',
+    type: 'photos',
+    size: '890 MB',
+    uploadDate: '2023-09-23',
+    status: 'approved',
+    url: '#',
+    thumbnail: '/api/placeholder/150/100',
+    category: 'final'
+  },
+  {
+    id: '3',
+    name: 'Riprese_Drone_Raw.zip',
+    type: 'video',
+    size: '1.5 GB',
+    uploadDate: '2023-09-20',
+    status: 'review',
+    url: '#',
+    thumbnail: '/api/placeholder/150/100',
+    category: 'raw'
+  },
+  {
+    id: '4',
+    name: 'Album_Preview.pdf',
+    type: 'document',
+    size: '45 MB',
+    uploadDate: '2023-09-25',
+    status: 'approved',
+    url: '#',
+    thumbnail: '/api/placeholder/150/100',
+    category: 'preview'
+  }
+]
+
+const comments = [
+  {
+    id: '1',
+    author: 'Marco Rossi',
+    role: 'Cliente',
+    date: '2023-09-29',
+    content: 'Siamo rimasti senza parole! Il video è fantastico e le foto sono perfette. Grazie di cuore per aver catturato ogni momento speciale.',
+    rating: 5
+  },
+  {
+    id: '2',
+    author: 'Roberto',
+    role: 'Fotografo',
+    date: '2023-09-28',
+    content: 'Consegnato il video finale. Ho aggiunto alcune transizioni extra e la colonna sonora che avevamo discusso.',
+    rating: null
+  },
+  {
+    id: '3',
+    author: 'Laura Bianchi',
+    role: 'Sposa',
+    date: '2023-09-25',
+    content: 'Le foto sono bellissime! Potreste aggiungere anche quella con i nonni durante il brindisi? Era un momento molto importante per noi.',
+    rating: null
+  },
+  {
+    id: '4',
+    author: 'Roberto',
+    role: 'Fotografo',
+    date: '2023-09-25',
+    content: 'Certamente! Ho aggiunto la foto con i nonni nella selezione finale. Trovate tutto nella cartella aggiornata.',
+    rating: null
+  }
+]
+
+const getTaskIcon = (category: string) => {
+  switch (category) {
+    case 'planning': return Calendar
+    case 'preparation': return CheckCircle
+    case 'production': return Camera
+    case 'post-production': return Edit
+    case 'delivery': return Send
+    default: return FileText
+  }
+}
+
+const getTaskColor = (category: string) => {
+  switch (category) {
+    case 'planning': return 'bg-blue-50 text-blue-700'
+    case 'preparation': return 'bg-green-50 text-green-700'
+    case 'production': return 'bg-purple-50 text-purple-700'
+    case 'post-production': return 'bg-orange-50 text-orange-700'
+    case 'delivery': return 'bg-pink-50 text-pink-700'
+    default: return 'bg-gray-50 text-gray-700'
+  }
+}
+
+const getFileIcon = (type: string) => {
+  switch (type) {
+    case 'video': return Film
+    case 'photos': return Image
+    case 'document': return FileText
+    default: return FileText
+  }
+}
+
+const getPriorityColor = (priority: string) => {
+  switch (priority) {
+    case 'critical': return 'bg-red-50 text-red-700'
+    case 'high': return 'bg-orange-50 text-orange-700'
+    case 'medium': return 'bg-yellow-50 text-yellow-700'
+    case 'low': return 'bg-green-50 text-green-700'
+    default: return 'bg-gray-50 text-gray-700'
+  }
+}
+
+export default function ProjectDetail() {
+  const { id: projectId } = useParams()
   const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'files' | 'timeline' | 'comments'>('overview')
 
   return (
@@ -797,3 +1579,46 @@ export default function ProjectDetail() {
     </div>
   )
 }
+
+useEffect(() => {
+  async function fetchTasks() {
+    setLoadingTasks(true)
+    setErrorTasks("")
+    const { data, error } = await supabase.from('tasks').select('*').eq('project_id', projectId)
+    if (error) setErrorTasks(error.message)
+    setTasks(data || [])
+    setLoadingTasks(false)
+  }
+  if (projectId) fetchTasks()
+}, [projectId])
+{activeTab === 'tasks' && (
+  <div className="space-y-6">
+    <div className="flex items-center justify-between">
+      <h2 className="text-xl font-semibold text-foreground">Task del Progetto</h2>
+      <Button>
+        <Plus className="w-4 h-4 mr-2" />
+        Nuovo Task
+      </Button>
+    </div>
+    {loadingTasks ? (
+      <div className="py-8 text-center text-muted-foreground">Caricamento task...</div>
+    ) : errorTasks ? (
+      <div className="py-8 text-center text-red-500">Errore: {errorTasks}</div>
+    ) : tasks.length === 0 ? (
+      <div className="py-8 text-center text-muted-foreground">Nessun task trovato.</div>
+    ) : (
+    <div className="space-y-4">
+      {tasks.map((task) => {
+        const TaskIcon = getTaskIcon(task.category)
+        return (
+          <Card key={task.id}>
+            <CardContent className="p-6">
+              <div className="flex items-start space-x-4">
+                <div className={`p-3 rounded-lg ${getTaskColor(task.category)}`}>
+                  <TaskIcon className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-foreground">{task.title}</h3>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2

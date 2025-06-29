@@ -1,5 +1,7 @@
 import { Menu, Sun, Moon, Bell, Search, User } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useAuth } from '../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 interface HeaderProps {
   onToggleSidebar: () => void
@@ -10,6 +12,13 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light')
+  }
+
+  const { signOut, user } = useAuth()
+  const navigate = useNavigate()
+  const handleLogout = async () => {
+    await signOut()
+    navigate('/login')
   }
 
   return (
@@ -60,14 +69,19 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
           </button>
 
           {/* User menu */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 relative group">
             <div className="hidden md:block text-right">
-              <p className="text-sm font-medium text-foreground">Roberto</p>
+              <p className="text-sm font-medium text-foreground">{user?.email || 'Utente'}</p>
               <p className="text-xs text-muted-foreground">Admin</p>
             </div>
-            <button className="w-8 h-8 bg-gradient-to-br from-studio-500 to-prizm-500 rounded-full flex items-center justify-center hover:shadow-lg transition-shadow">
+            <button className="w-8 h-8 bg-gradient-to-br from-studio-500 to-prizm-500 rounded-full flex items-center justify-center hover:shadow-lg transition-shadow group-hover:ring-2 group-hover:ring-primary relative">
               <User className="w-4 h-4 text-white" />
             </button>
+            <div className="absolute right-0 top-12 bg-white dark:bg-gray-800 shadow-lg rounded p-2 min-w-[120px] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50">
+              <button onClick={handleLogout} className="w-full text-left px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </div>

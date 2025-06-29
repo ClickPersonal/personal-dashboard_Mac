@@ -26,6 +26,8 @@ import {
   Lightbulb,
 
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 // Mock data - in real app this would come from Supabase
 const revenueData = [
@@ -157,6 +159,16 @@ const upcomingTasks = [
 export default function Dashboard() {
   return (
     <div className="space-y-6">
+      {/* Notifiche */}
+      {notifications.length > 0 && (
+        <div className="space-y-2">
+          {notifications.filter(n => !n.read).map(n => (
+            <div key={n.id} className={`rounded p-3 text-sm font-medium shadow ${n.type === 'warning' ? 'bg-yellow-100 text-yellow-800' : n.type === 'success' ? 'bg-green-100 text-green-800' : n.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
+              {n.message}
+            </div>
+          ))}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -381,3 +393,64 @@ export default function Dashboard() {
     </div>
   )
 }
+
+
+const [revenueData, setRevenueData] = useState<any[]>([])
+const [areaDistribution, setAreaDistribution] = useState<any[]>([])
+const [monthlyTrend, setMonthlyTrend] = useState<any[]>([])
+const [loadingDashboard, setLoadingDashboard] = useState(false)
+const [dashboardError, setDashboardError] = useState<string | null>(null)
+const [notifications, setNotifications] = useState<{id:string, message:string, type:'info'|'success'|'warning'|'error', read:boolean}[]>([])
+function addNotification(message:string, type:'info'|'success'|'warning'|'error' = 'info') {
+  setNotifications(prev => [...prev, { id: Math.random().toString(36).slice(2), message, type, read: false }])
+}
+// Esempio automazione: reminder globale (placeholder)
+useEffect(() => {
+  // Qui si può inserire logica per reminder globali (es. task/progetti in scadenza)
+}, [])
+
+useEffect(() => {
+  async function fetchDashboardData() {
+    setLoadingDashboard(true)
+    setDashboardError(null)
+    // Fetch all income transactions
+    const { data: transactions, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('type', 'income')
+    if (error) {
+      setDashboardError(error.message)
+      setLoadingDashboard(false)
+      return
+    }
+    // Ricavi mensili per area
+    const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']
+    const areaKeys = ['studio', 'prizm', 'statale']
+    const monthly = months.map((month, idx) => {
+      const monthNum = (idx + 1).toString().padStart(2, '0')
+      const filtered = transactions.filter(t => t.date && t.date.slice(5,7) === monthNum)
+      const entry: any = { month }
+      areaKeys.forEach(area => {
+        entry[area] = filtered.filter(t => t.area === area).reduce((sum, t) => sum + (t.amount || 0), 0)
+      })
+      return entry
+    })
+    setRevenueData(monthly)
+    // Distribuzione per area
+    const areaTotals = areaKeys.map(area => ({
+      name: area === 'studio' ? 'Sokey Studio' : area.charAt(0).toUpperCase() + area.slice(1),
+      value: transactions.filter(t => t.area === area).reduce((sum, t) => sum + (t.amount || 0), 0),
+      color: area === 'studio' ? '#f97316' : area === 'prizm' ? '#3b82f6' : '#22c55e'
+    }))
+    setAreaDistribution(areaTotals)
+    // Trend mensile totale
+    const monthlyTotal = months.map((month, idx) => {
+      const monthNum = (idx + 1).toString().padStart(2, '0')
+      const total = transactions.filter(t => t.date && t.date.slice(5,7) === monthNum).reduce((sum, t) => sum + (t.amount || 0), 0)
+      return { month, total }
+    })
+    setMonthlyTrend(monthlyTotal)
+    setLoadingDashboard(false)
+  }
+  fetchDashboardData()
+}, [])

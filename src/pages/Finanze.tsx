@@ -225,8 +225,141 @@ export default function Finanze() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedArea, setSelectedArea] = useState('all')
 
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  // Stato CRUD Supabase
+  const [transactionsData, setTransactionsData] = useState<any[]>([])
+  const [loadingTransactions, setLoadingTransactions] = useState(false)
+  const [errorTransactions, setErrorTransactions] = useState<string | null>(null)
+  const [showCreateTransactionModal, setShowCreateTransactionModal] = useState(false)
+  const [createTransactionData, setCreateTransactionData] = useState({
+    date: '',
+    description: '',
+    amount: 0,
+    type: 'income',
+    area: '',
+    category: '',
+    client: '',
+    status: '',
+    invoiceNumber: ''
+  })
+  const [creatingTransaction, setCreatingTransaction] = useState(false)
+  const [createTransactionError, setCreateTransactionError] = useState<string | null>(null)
+  const [showEditTransactionModal, setShowEditTransactionModal] = useState(false)
+  const [editTransactionData, setEditTransactionData] = useState<any>(null)
+  const [savingTransactionEdit, setSavingTransactionEdit] = useState(false)
+  const [editTransactionError, setEditTransactionError] = useState<string | null>(null)
+  const [showDeleteTransactionModal, setShowDeleteTransactionModal] = useState(false)
+  const [deleteTransactionId, setDeleteTransactionId] = useState<string | null>(null)
+  const [deletingTransaction, setDeletingTransaction] = useState(false)
+  const [deleteTransactionError, setDeleteTransactionError] = useState<string | null>(null)
+
+  // CRUD Supabase
+  const fetchTransactions = async () => {
+    setLoadingTransactions(true)
+    setErrorTransactions(null)
+    try {
+      const { data, error } = await window.supabase
+        .from('transactions')
+        .select('*')
+        .order('date', { ascending: false })
+      if (error) throw error
+      setTransactionsData(data)
+    } catch (err: any) {
+      setErrorTransactions(err.message)
+    } finally {
+      setLoadingTransactions(false)
+    }
+  }
+
+  const handleOpenCreateTransaction = () => {
+    setCreateTransactionData({
+      date: '',
+      description: '',
+      amount: 0,
+      type: 'income',
+      area: '',
+      category: '',
+      client: '',
+      status: '',
+      invoiceNumber: ''
+    })
+    setShowCreateTransactionModal(true)
+    setCreateTransactionError(null)
+  }
+
+  const handleCreateTransaction = async () => {
+    setCreatingTransaction(true)
+    setCreateTransactionError(null)
+    try {
+      const { error } = await window.supabase
+        .from('transactions')
+        .insert([createTransactionData])
+      if (error) throw error
+      setShowCreateTransactionModal(false)
+      fetchTransactions()
+    } catch (err: any) {
+      setCreateTransactionError(err.message)
+    } finally {
+      setCreatingTransaction(false)
+    }
+  }
+
+  const handleOpenEditTransaction = (transaction: any) => {
+    setEditTransactionData(transaction)
+    setShowEditTransactionModal(true)
+    setEditTransactionError(null)
+  }
+
+  const handleSaveEditTransaction = async () => {
+    if (!editTransactionData) return
+    setSavingTransactionEdit(true)
+    setEditTransactionError(null)
+    try {
+      const { error } = await window.supabase
+        .from('transactions')
+        .update(editTransactionData)
+        .eq('id', editTransactionData.id)
+      if (error) throw error
+      setShowEditTransactionModal(false)
+      fetchTransactions()
+    } catch (err: any) {
+      setEditTransactionError(err.message)
+    } finally {
+      setSavingTransactionEdit(false)
+    }
+  }
+
+  const handleOpenDeleteTransaction = (id: string) => {
+    setDeleteTransactionId(id)
+    setShowDeleteTransactionModal(true)
+    setDeleteTransactionError(null)
+  }
+
+  const handleDeleteTransaction = async () => {
+    if (!deleteTransactionId) return
+    setDeletingTransaction(true)
+    setDeleteTransactionError(null)
+    try {
+      const { error } = await window.supabase
+        .from('transactions')
+        .delete()
+        .eq('id', deleteTransactionId)
+      if (error) throw error
+      setShowDeleteTransactionModal(false)
+      fetchTransactions()
+    } catch (err: any) {
+      setDeleteTransactionError(err.message)
+    } finally {
+      setDeletingTransaction(false)
+    }
+  }
+
+  // Carica le transazioni da Supabase al mount
+  useEffect(() => {
+    fetchTransactions()
+  }, [])
+
+  const filteredTransactions = transactionsData.filter((transaction: any) => {
+    const matchesSearch = transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (transaction.client && transaction.client.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesArea = selectedArea === 'all' || transaction.area === selectedArea
     return matchesSearch && matchesArea
@@ -258,7 +391,7 @@ export default function Finanze() {
             <Download className="w-4 h-4 mr-2" />
             Esporta
           </Button>
-          <Button>
+          <Button onClick={handleOpenCreateTransaction}>
             <Plus className="w-4 h-4 mr-2" />
             Nuova Transazione
           </Button>
@@ -774,8 +907,11 @@ export default function Finanze() {
                               <Button size="sm" variant="outline">
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button size="sm" variant="outline">
+                              <Button size="sm" variant="outline" onClick={() => handleOpenEditTransaction(transaction)}>
                                 <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleOpenDeleteTransaction(transaction.id)}>
+                                Elimina
                               </Button>
                             </div>
                           </td>
@@ -788,6 +924,79 @@ export default function Finanze() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Modali CRUD Transazioni */}
+      {showCreateTransactionModal && (
+        <Dialog open={showCreateTransactionModal} onOpenChange={setShowCreateTransactionModal}>
+          <Dialog.Content>
+            <Dialog.Title>Nuova Transazione</Dialog.Title>
+            <div className="space-y-2">
+              <input className="input" placeholder="Data" type="date" value={createTransactionData.date} onChange={e => setCreateTransactionData({ ...createTransactionData, date: e.target.value })} />
+              <input className="input" placeholder="Descrizione" value={createTransactionData.description} onChange={e => setCreateTransactionData({ ...createTransactionData, description: e.target.value })} />
+              <input className="input" placeholder="Importo" type="number" value={createTransactionData.amount} onChange={e => setCreateTransactionData({ ...createTransactionData, amount: Number(e.target.value) })} />
+              <select className="input" value={createTransactionData.type} onChange={e => setCreateTransactionData({ ...createTransactionData, type: e.target.value })}>
+                <option value="income">Entrata</option>
+                <option value="expense">Uscita</option>
+              </select>
+              <select className="input" value={createTransactionData.area} onChange={e => setCreateTransactionData({ ...createTransactionData, area: e.target.value })}>
+                <option value="">Seleziona Area</option>
+                {areas.map(area => <option key={area.id} value={area.id}>{area.name}</option>)}
+              </select>
+              <input className="input" placeholder="Categoria" value={createTransactionData.category} onChange={e => setCreateTransactionData({ ...createTransactionData, category: e.target.value })} />
+              <input className="input" placeholder="Cliente" value={createTransactionData.client} onChange={e => setCreateTransactionData({ ...createTransactionData, client: e.target.value })} />
+              <input className="input" placeholder="Stato" value={createTransactionData.status} onChange={e => setCreateTransactionData({ ...createTransactionData, status: e.target.value })} />
+              <input className="input" placeholder="Numero Fattura" value={createTransactionData.invoiceNumber} onChange={e => setCreateTransactionData({ ...createTransactionData, invoiceNumber: e.target.value })} />
+              {createTransactionError && <div className="text-red-500 text-sm">{createTransactionError}</div>}
+            </div>
+            <div className="flex space-x-2 mt-4">
+              <Button variant="default" loading={creatingTransaction} className="flex-1" onClick={handleCreateTransaction}>Crea</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowCreateTransactionModal(false)}>Annulla</Button>
+            </div>
+          </Dialog.Content>
+        </Dialog>
+      )}
+      {showEditTransactionModal && editTransactionData && (
+        <Dialog open={showEditTransactionModal} onOpenChange={setShowEditTransactionModal}>
+          <Dialog.Content>
+            <Dialog.Title>Modifica Transazione</Dialog.Title>
+            <div className="space-y-2">
+              <input className="input" placeholder="Data" type="date" value={editTransactionData.date} onChange={e => setEditTransactionData({ ...editTransactionData, date: e.target.value })} />
+              <input className="input" placeholder="Descrizione" value={editTransactionData.description} onChange={e => setEditTransactionData({ ...editTransactionData, description: e.target.value })} />
+              <input className="input" placeholder="Importo" type="number" value={editTransactionData.amount} onChange={e => setEditTransactionData({ ...editTransactionData, amount: Number(e.target.value) })} />
+              <select className="input" value={editTransactionData.type} onChange={e => setEditTransactionData({ ...editTransactionData, type: e.target.value })}>
+                <option value="income">Entrata</option>
+                <option value="expense">Uscita</option>
+              </select>
+              <select className="input" value={editTransactionData.area} onChange={e => setEditTransactionData({ ...editTransactionData, area: e.target.value })}>
+                <option value="">Seleziona Area</option>
+                {areas.map(area => <option key={area.id} value={area.id}>{area.name}</option>)}
+              </select>
+              <input className="input" placeholder="Categoria" value={editTransactionData.category} onChange={e => setEditTransactionData({ ...editTransactionData, category: e.target.value })} />
+              <input className="input" placeholder="Cliente" value={editTransactionData.client} onChange={e => setEditTransactionData({ ...editTransactionData, client: e.target.value })} />
+              <input className="input" placeholder="Stato" value={editTransactionData.status} onChange={e => setEditTransactionData({ ...editTransactionData, status: e.target.value })} />
+              <input className="input" placeholder="Numero Fattura" value={editTransactionData.invoiceNumber} onChange={e => setEditTransactionData({ ...editTransactionData, invoiceNumber: e.target.value })} />
+              {editTransactionError && <div className="text-red-500 text-sm">{editTransactionError}</div>}
+            </div>
+            <div className="flex space-x-2 mt-4">
+              <Button variant="default" loading={savingTransactionEdit} className="flex-1" onClick={handleSaveEditTransaction}>Salva</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowEditTransactionModal(false)}>Annulla</Button>
+            </div>
+          </Dialog.Content>
+        </Dialog>
+      )}
+      {showDeleteTransactionModal && (
+        <Dialog open={showDeleteTransactionModal} onOpenChange={setShowDeleteTransactionModal}>
+          <Dialog.Content>
+            <Dialog.Title>Elimina Transazione</Dialog.Title>
+            <p>Sei sicuro di voler eliminare questa transazione? L'operazione non è reversibile.</p>
+            {deleteTransactionError && <div className="text-red-500 text-sm">{deleteTransactionError}</div>}
+            <div className="flex space-x-2 mt-4">
+              <Button variant="destructive" loading={deletingTransaction} className="flex-1" onClick={handleDeleteTransaction}>Elimina</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowDeleteTransactionModal(false)}>Annulla</Button>
+            </div>
+          </Dialog.Content>
+        </Dialog>
       )}
     </div>
   )
