@@ -1,13 +1,11 @@
 import { Menu, Sun, Moon, Bell, Search, User } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
-import { cn } from '@/lib/utils'
 
 interface HeaderProps {
   onToggleSidebar: () => void
-  sidebarOpen: boolean
 }
 
-export default function Header({ onToggleSidebar, sidebarOpen }: HeaderProps) {
+export default function Header({ onToggleSidebar }: HeaderProps) {
   const { theme, setTheme } = useTheme()
 
   const toggleTheme = () => {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Link } from 'react-router-dom'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { formatDate, formatCurrency, getStatusColor } from '@/lib/utils'
 import {
@@ -14,11 +14,9 @@ import {
   FileText,
   DollarSign,
   Camera,
-  Video,
   Users,
   MessageSquare,
   Clock,
-  CheckCircle,
   AlertCircle,
   Star,
   Plus,
@@ -206,7 +204,7 @@ const getProjectIcon = (type: string) => {
 }
 
 export default function ClientDetail() {
-  const { id } = useParams()
+  // const { id } = useParams() // Currently using mock data
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'interactions' | 'proposals'>('overview')
 
   return (

@@ -10,7 +10,7 @@ import {
   Bell,
   Camera,
   Download,
-  Upload,
+
   Edit,
   Eye,
   AlertCircle,
@@ -19,7 +19,6 @@ import {
   Users,
   Briefcase,
   Coffee,
-  Car,
   Home,
 } from 'lucide-react'
 

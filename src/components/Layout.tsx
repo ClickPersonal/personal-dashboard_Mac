@@ -20,7 +20,7 @@ export default function Layout({ children }: LayoutProps) {
       <Sidebar isOpen={sidebarOpen} currentPath={location.pathname} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
+        <Header onToggleSidebar={toggleSidebar} />
         
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-6">
           <div className="max-w-7xl mx-auto">

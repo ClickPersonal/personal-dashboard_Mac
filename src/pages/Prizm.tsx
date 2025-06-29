@@ -5,7 +5,7 @@ import { formatDate, getStatusColor } from '@/lib/utils'
 import {
   Plus,
   Search,
-  Filter,
+
   Lightbulb,
   Users,
   Target,
@@ -15,9 +15,7 @@ import {
   MessageSquare,
   BarChart3,
   CheckCircle,
-  Clock,
   AlertCircle,
-  ExternalLink,
   Edit,
   Eye,
 } from 'lucide-react'

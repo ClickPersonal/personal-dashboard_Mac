@@ -20,7 +20,7 @@ import {
   MoreHorizontal,
   Phone,
   Mail,
-  MapPin,
+
 } from 'lucide-react'
 
 // Mock data - in real app this would come from Supabase

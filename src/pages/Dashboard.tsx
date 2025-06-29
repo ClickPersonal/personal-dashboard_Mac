@@ -24,8 +24,7 @@ import {
   Euro,
   Camera,
   Lightbulb,
-  Building2,
-  AlertCircle,
+
 } from 'lucide-react'
 
 // Mock data - in real app this would come from Supabase

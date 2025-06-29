@@ -1,39 +1,32 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Link } from 'react-router-dom'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { formatDate, formatCurrency, getStatusColor, calculateMargin, calculateROI } from '@/lib/utils'
+import { formatDate, formatCurrency, getStatusColor } from '@/lib/utils'
 import {
   ArrowLeft,
   Edit,
   Calendar,
   DollarSign,
   User,
-  Building,
   Clock,
   CheckCircle,
-  AlertCircle,
   FileText,
   Camera,
   Video,
-  Users,
   MessageSquare,
   Upload,
   Download,
   Eye,
   Plus,
   Star,
-  Play,
-  Pause,
-  RotateCcw,
   Send,
   Archive,
   Share,
   Link as LinkIcon,
   Image,
   Film,
-  Palette,
-  Globe,
+  Phone,
 } from 'lucide-react'
 
 // Mock data - in a real app, this would come from an API
@@ -282,7 +275,7 @@ const getPriorityColor = (priority: string) => {
 }
 
 export default function ProjectDetail() {
-  const { id } = useParams()
+  // const { id } = useParams() // Currently using mock data
   const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'files' | 'timeline' | 'comments'>('overview')
 
   return (
