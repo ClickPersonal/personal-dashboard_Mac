@@ -20,7 +20,8 @@ export function AddProposalModal({ isOpen, onClose, onSuccess, defaultClientId }
     status: 'draft' as const,
     valid_until: '',
     terms: '',
-    notes: ''
+    notes: '',
+    services: [] as string[]
   })
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(false)
@@ -58,7 +59,8 @@ export function AddProposalModal({ isOpen, onClose, onSuccess, defaultClientId }
         amount: parseFloat(formData.amount),
         valid_until: formData.valid_until || undefined,
         terms: formData.terms || undefined,
-        notes: formData.notes || undefined
+        notes: formData.notes || undefined,
+        services: formData.services
       }
 
       const proposal = await proposalService.create(proposalData)
@@ -72,7 +74,8 @@ export function AddProposalModal({ isOpen, onClose, onSuccess, defaultClientId }
         status: 'draft',
         valid_until: '',
         terms: '',
-        notes: ''
+        notes: '',
+        services: []
       })
     } catch (err) {
       setError('Errore durante la creazione della proposta')

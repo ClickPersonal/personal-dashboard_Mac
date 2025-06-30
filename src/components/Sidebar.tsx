@@ -1,4 +1,3 @@
-import React from 'react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import {
@@ -9,7 +8,6 @@ import {
   Euro,
   Users,
   FolderOpen,
-  Calendar,
   TrendingUp,
   CheckSquare,
   FileText,

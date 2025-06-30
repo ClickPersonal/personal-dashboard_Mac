@@ -23,7 +23,8 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess, defaultType = 
     payment_method: 'bank_transfer' as const,
     status: 'completed' as const,
     invoice_number: '',
-    notes: ''
+    notes: '',
+    area: 'studio' as const
   })
   const [clients, setClients] = useState<Client[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -61,7 +62,8 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess, defaultType = 
         client_id: formData.client_id || undefined,
         project_id: formData.project_id || undefined,
         invoice_number: formData.invoice_number || undefined,
-        notes: formData.notes || undefined
+        notes: formData.notes || undefined,
+        area: formData.area
       }
 
       const transaction = await transactionService.create(transactionData)
@@ -78,7 +80,8 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess, defaultType = 
         payment_method: 'bank_transfer',
         status: 'completed',
         invoice_number: '',
-        notes: ''
+        notes: '',
+        area: 'studio'
       })
     } catch (err) {
       setError('Errore durante la creazione della transazione')

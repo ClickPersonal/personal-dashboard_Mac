@@ -21,7 +21,8 @@ export function AddTaskModal({ isOpen, onClose, onSuccess, defaultProjectId }: A
     assigned_to: '',
     due_date: '',
     estimated_hours: '',
-    tags: ''
+    tags: '',
+    area: 'studio' as const
   })
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(false)
@@ -60,7 +61,8 @@ export function AddTaskModal({ isOpen, onClose, onSuccess, defaultProjectId }: A
         assigned_to: formData.assigned_to || undefined,
         due_date: formData.due_date || undefined,
         estimated_hours: formData.estimated_hours ? parseInt(formData.estimated_hours) : undefined,
-        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : undefined
+        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : undefined,
+        area: formData.area
       }
 
       const task = await taskService.create(taskData)
@@ -75,7 +77,8 @@ export function AddTaskModal({ isOpen, onClose, onSuccess, defaultProjectId }: A
         assigned_to: '',
         due_date: '',
         estimated_hours: '',
-        tags: ''
+        tags: '',
+        area: 'studio'
       })
     } catch (err) {
       setError('Errore durante la creazione del task')
