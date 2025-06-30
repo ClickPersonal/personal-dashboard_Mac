@@ -1008,6 +1008,29 @@ export default function SokeyStudio() {
     </Button>
   </div>
 </td>
+</tr>
+</tbody>
+</table>">
+  <Progress value={project.progress} />
+</td>
+<td className="py-3 px-4">
+  <p className="text-sm text-foreground">{formatDate(project.endDate)}</p>
+</td>
+<td className="py-3 px-4">
+  <div className="flex space-x-2">
+    <Link to={`/studio/project/${project.id}`}>
+      <Button size="sm" variant="outline">
+        <Eye className="w-4 h-4" />
+      </Button>
+    </Link>
+    <Button size="sm" variant="outline" onClick={() => handleOpenEditProject(project)}>
+      <Edit className="w-4 h-4" />
+    </Button>
+    <Button size="sm" variant="destructive" onClick={() => handleOpenDeleteProject(project.id)}>
+      Elimina
+    </Button>
+  </div>
+</td>
 </tr>">
                             <div className="flex items-center space-x-3">
                               <div className="p-2 rounded-lg bg-studio-50">
