@@ -50,8 +50,8 @@ import {
   TrendingDown,
   Users,
   FolderOpen,
-  Calendar,
   Euro,
+  Download,
 
 
 } from 'lucide-react'
@@ -74,6 +74,7 @@ export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [dateFilter, setDateFilter] = useState('month')
 
   useEffect(() => {
     loadDashboardData()
@@ -99,6 +100,102 @@ export default function Dashboard() {
       console.error(err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const generatePDFReport = () => {
+    try {
+      const reportDate = new Date().toLocaleDateString('it-IT')
+      const reportTime = new Date().toLocaleTimeString('it-IT')
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Report Dashboard - ${reportDate}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; }
+            .title { font-size: 28px; font-weight: bold; color: #1f2937; }
+            .subtitle { font-size: 16px; color: #6b7280; margin-top: 10px; }
+            .section { margin: 30px 0; }
+            .section-title { font-size: 20px; font-weight: bold; color: #374151; margin-bottom: 15px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; }
+            .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 20px 0; }
+            .stat-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #f9fafb; }
+            .stat-label { font-size: 14px; color: #6b7280; margin-bottom: 5px; }
+            .stat-value { font-size: 24px; font-weight: bold; color: #1f2937; }
+            .activities { margin-top: 20px; }
+            .activity { padding: 10px; border-bottom: 1px solid #e5e7eb; }
+            .activity:last-child { border-bottom: none; }
+            .footer { margin-top: 50px; text-align: center; color: #6b7280; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">REPORT DASHBOARD</div>
+            <div class="subtitle">Periodo: ${dateFilter === 'month' ? 'Questo mese' : dateFilter === 'week' ? 'Questa settimana' : 'Oggi'}</div>
+            <div class="subtitle">Generato il ${reportDate} alle ${reportTime}</div>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">Statistiche Principali</div>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">Ricavi Totali</div>
+                <div class="stat-value">€${dashboardData?.totalRevenue?.toLocaleString('it-IT') || '0'}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Clienti Attivi</div>
+                <div class="stat-value">${dashboardData?.activeClients || '0'}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Progetti Attivi</div>
+                <div class="stat-value">${dashboardData?.activeProjects || '0'}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Margine Medio</div>
+                <div class="stat-value">${dashboardData?.averageMargin || '0'}%</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">Attività Recenti</div>
+            <div class="activities">
+              ${dashboardData?.recentActivities?.map(activity => `
+                <div class="activity">
+                  <strong>${activity.title}:</strong> ${activity.description}
+                  <br><small style="color: #6b7280;">${activity.time}</small>
+                </div>
+              `).join('') || '<div class="activity">Nessuna attività recente</div>'}
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p>Report generato automaticamente dal sistema di gestione</p>
+          </div>
+        </body>
+        </html>
+      `
+      
+      const blob = new Blob([htmlContent], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `dashboard-report-${new Date().toISOString().split('T')[0]}.html`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      URL.revokeObjectURL(url)
+      
+      alert('Report generato! In produzione questo sarebbe un PDF.')
+      
+    } catch (err) {
+      console.error('Error generating report:', err)
+      alert('Errore durante la generazione del report')
     }
   }
 
@@ -182,13 +279,19 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex space-x-3">
-          <Button variant="outline">
-            <Calendar className="w-4 h-4 mr-2" />
-            Questo mese
-          </Button>
-          <Button>
-            <TrendingUp className="w-4 h-4 mr-2" />
-            Report
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="today">Oggi</option>
+            <option value="week">Questa settimana</option>
+            <option value="month">Questo mese</option>
+            <option value="year">Quest'anno</option>
+          </select>
+          <Button onClick={generatePDFReport}>
+            <Download className="w-4 h-4 mr-2" />
+            Esporta Report
           </Button>
         </div>
       </div>

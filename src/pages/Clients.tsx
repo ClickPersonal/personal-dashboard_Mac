@@ -3,6 +3,7 @@ import { Plus, Search, Edit, Trash2, Eye, Phone, Mail, MapPin } from 'lucide-rea
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { AddClientModal } from '@/components/modals/AddClientModal'
+import { EditClientModal } from '@/components/modals/EditClientModal'
 import { clientService } from '@/lib/database'
 import type { Client } from '@/lib/supabase'
 import { Link } from 'react-router-dom'
@@ -12,6 +13,8 @@ export function Clients() {
   const [filteredClients, setFilteredClients] = useState<Client[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -53,6 +56,19 @@ export function Clients() {
 
   const handleAddClient = (newClient: Client) => {
     setClients(prev => [newClient, ...prev])
+  }
+
+  const handleEditClient = (client: Client) => {
+    setSelectedClient(client)
+    setIsEditModalOpen(true)
+  }
+
+  const handleUpdateClient = (updatedClient: Client) => {
+    setClients(prev => prev.map(client => 
+      client.id === updatedClient.id ? updatedClient : client
+    ))
+    setIsEditModalOpen(false)
+    setSelectedClient(null)
   }
 
   const handleDeleteClient = async (clientId: string) => {
@@ -205,7 +221,10 @@ export function Clients() {
                   >
                     <Eye className="h-4 w-4" />
                   </Link>
-                  <button className="p-1 text-gray-400 hover:text-yellow-600 transition-colors">
+                  <button 
+                    onClick={() => handleEditClient(client)}
+                    className="p-1 text-gray-400 hover:text-yellow-600 transition-colors"
+                  >
                     <Edit className="h-4 w-4" />
                   </button>
                   <button
@@ -276,6 +295,17 @@ export function Clients() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleAddClient}
+      />
+
+      {/* Edit Client Modal */}
+      <EditClientModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false)
+          setSelectedClient(null)
+        }}
+        onSuccess={handleUpdateClient}
+        client={selectedClient}
       />
     </div>
   )

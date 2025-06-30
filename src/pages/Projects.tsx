@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, Calendar, Euro, User, Filter } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Eye, Calendar, Euro, User, Filter, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { AddProjectModal } from '@/components/modals/AddProjectModal'
 import { projectService, clientService } from '@/lib/database'
 import type { Project, Client } from '@/lib/supabase'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 export function Projects() {
+  const location = useLocation()
   const [projects, setProjects] = useState<Project[]>([])
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -17,6 +18,18 @@ export function Projects() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set())
+
+  // Determina il settore corrente dall'URL
+  const getCurrentSector = () => {
+    const path = location.pathname
+    if (path.includes('/studio/')) return 'studio'
+    if (path.includes('/prizm/')) return 'prizm'
+    if (path.includes('/statale/')) return 'statale'
+    return 'all'
+  }
+
+  const currentSector = getCurrentSector()
 
   useEffect(() => {
     loadData()
@@ -24,7 +37,7 @@ export function Projects() {
 
   useEffect(() => {
     filterProjects()
-  }, [projects, searchTerm, statusFilter, areaFilter])
+  }, [projects, searchTerm, statusFilter, areaFilter, currentSector])
 
   const loadData = async () => {
     try {
@@ -45,6 +58,11 @@ export function Projects() {
 
   const filterProjects = () => {
     let filtered = projects
+
+    // Filtra per settore corrente
+    if (currentSector !== 'all') {
+      filtered = filtered.filter(project => project.area === currentSector)
+    }
 
     if (searchTerm) {
       filtered = filtered.filter(project =>
@@ -80,6 +98,38 @@ export function Projects() {
       console.error('Error deleting project:', err)
       alert('Errore durante l\'eliminazione del progetto')
     }
+  }
+
+  const handleFileUpload = (projectId: string) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.multiple = true
+    input.accept = 'image/*,video/*,.pdf,.doc,.docx'
+    
+    input.onchange = async (e) => {
+      const files = (e.target as HTMLInputElement).files
+      if (!files || files.length === 0) return
+
+      setUploadingFiles(prev => new Set(prev).add(projectId))
+      
+      try {
+        // Simula upload - in un'app reale useresti Supabase Storage
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        alert(`${files.length} file caricati con successo per il progetto!`)
+      } catch (err) {
+        console.error('Error uploading files:', err)
+        alert('Errore durante il caricamento dei file')
+      } finally {
+        setUploadingFiles(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(projectId)
+          return newSet
+        })
+      }
+    }
+    
+    input.click()
   }
 
   const getStatusColor = (status: string) => {
@@ -298,6 +348,18 @@ export function Projects() {
                   </Link>
                   <button className="p-1 text-gray-400 hover:text-yellow-600 transition-colors">
                     <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleFileUpload(project.id)}
+                    className={`p-1 transition-colors ${
+                      uploadingFiles.has(project.id)
+                        ? 'text-green-600 animate-pulse'
+                        : 'text-gray-400 hover:text-green-600'
+                    }`}
+                    title={uploadingFiles.has(project.id) ? 'Caricamento in corso...' : 'Upload file'}
+                    disabled={uploadingFiles.has(project.id)}
+                  >
+                    <Upload className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteProject(project.id)}

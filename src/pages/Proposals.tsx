@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Edit, Trash2, Calendar, DollarSign, Eye } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Calendar, DollarSign, Eye, Download } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { AddProposalModal } from '@/components/modals/AddProposalModal'
@@ -107,6 +107,85 @@ export function Proposals() {
     } catch (err) {
       console.error('Error deleting proposal:', err)
       alert('Errore durante l\'eliminazione della proposta')
+    }
+  }
+
+  const handleExportPDF = async (proposal: Proposal) => {
+    try {
+      // Simula la generazione del PDF
+      const clientName = getClientName(proposal.client_id)
+      
+      // Crea il contenuto HTML per il PDF
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Proposta - ${proposal.title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .header { text-align: center; margin-bottom: 40px; }
+            .title { font-size: 24px; font-weight: bold; color: #333; }
+            .subtitle { font-size: 16px; color: #666; margin-top: 10px; }
+            .section { margin: 30px 0; }
+            .label { font-weight: bold; color: #333; }
+            .value { margin-left: 10px; }
+            .amount { font-size: 20px; font-weight: bold; color: #059669; }
+            .footer { margin-top: 50px; text-align: center; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">PROPOSTA COMMERCIALE</div>
+            <div class="subtitle">${proposal.title}</div>
+          </div>
+          
+          <div class="section">
+            <div><span class="label">Cliente:</span><span class="value">${clientName}</span></div>
+            <div><span class="label">Data:</span><span class="value">${new Date(proposal.created_at).toLocaleDateString('it-IT')}</span></div>
+            ${proposal.valid_until ? `<div><span class="label">Valida fino al:</span><span class="value">${new Date(proposal.valid_until).toLocaleDateString('it-IT')}</span></div>` : ''}
+          </div>
+          
+          ${proposal.description ? `
+          <div class="section">
+            <div class="label">Descrizione:</div>
+            <div style="margin-top: 10px; line-height: 1.6;">${proposal.description}</div>
+          </div>
+          ` : ''}
+          
+          <div class="section">
+            <div><span class="label">Importo:</span><span class="value amount">${formatCurrency(proposal.amount)}</span></div>
+            <div><span class="label">Status:</span><span class="value">${getStatusText(proposal.status)}</span></div>
+          </div>
+          
+          <div class="footer">
+            <p>Generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date().toLocaleTimeString('it-IT')}</p>
+          </div>
+        </body>
+        </html>
+      `
+      
+      // Crea un blob con il contenuto HTML
+      const blob = new Blob([htmlContent], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      
+      // Crea un link per il download
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `proposta-${proposal.title.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date().toISOString().split('T')[0]}.html`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Pulisce l'URL
+      URL.revokeObjectURL(url)
+      
+      // In un'app reale, useresti una libreria come jsPDF o html2pdf
+      alert('File HTML generato! In produzione questo sarebbe un PDF.')
+      
+    } catch (err) {
+      console.error('Error exporting PDF:', err)
+      alert('Errore durante l\'esportazione del PDF')
     }
   }
 
@@ -362,6 +441,13 @@ export function Proposals() {
                   </button>
                   <button className="p-1 text-gray-400 hover:text-yellow-600 transition-colors">
                     <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleExportPDF(proposal)}
+                    className="p-1 text-gray-400 hover:text-green-600 transition-colors"
+                    title="Esporta PDF"
+                  >
+                    <Download className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteProposal(proposal.id)}
