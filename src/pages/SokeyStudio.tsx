@@ -1009,8 +1009,6 @@ export default function SokeyStudio() {
   </div>
 </td>
 </tr>
-</tbody>
-</table>">
   <Progress value={project.progress} />
 </td>
 <td className="py-3 px-4">
