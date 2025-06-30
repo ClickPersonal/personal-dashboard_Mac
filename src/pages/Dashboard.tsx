@@ -1,6 +1,9 @@
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { formatCurrency } from '@/lib/utils'
+import { analyticsService } from '@/lib/database'
+import type { DashboardStats } from '@/lib/database'
 import {
   BarChart,
   Bar,
@@ -29,134 +32,114 @@ import {
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
-// Mock data - in real app this would come from Supabase
-const revenueData = [
-  { month: 'Gen', studio: 4500, prizm: 1200, statale: 2800 },
-  { month: 'Feb', studio: 5200, prizm: 1800, statale: 2800 },
-  { month: 'Mar', studio: 4800, prizm: 2200, statale: 2800 },
-  { month: 'Apr', studio: 6100, prizm: 2800, statale: 2800 },
-  { month: 'Mag', studio: 5800, prizm: 3200, statale: 2800 },
-  { month: 'Giu', studio: 7200, prizm: 3800, statale: 2800 },
+// Default data structure
+const defaultRevenueData = [
+  { month: 'Gen', studio: 0, prizm: 0, statale: 0 },
+  { month: 'Feb', studio: 0, prizm: 0, statale: 0 },
+  { month: 'Mar', studio: 0, prizm: 0, statale: 0 },
+  { month: 'Apr', studio: 0, prizm: 0, statale: 0 },
+  { month: 'Mag', studio: 0, prizm: 0, statale: 0 },
+  { month: 'Giu', studio: 0, prizm: 0, statale: 0 },
 ]
 
-const areaDistribution = [
-  { name: 'Sokey Studio', value: 45, color: '#f97316' },
-  { name: 'Prizm', value: 25, color: '#3b82f6' },
-  { name: 'Lavoro Statale', value: 30, color: '#22c55e' },
+const defaultAreaDistribution = [
+  { name: 'Sokey Studio', value: 0, color: '#f97316' },
+  { name: 'Prizm', value: 0, color: '#3b82f6' },
+  { name: 'Lavoro Statale', value: 0, color: '#22c55e' },
 ]
 
-const monthlyTrend = [
-  { month: 'Gen', total: 8500 },
-  { month: 'Feb', total: 9800 },
-  { month: 'Mar', total: 9800 },
-  { month: 'Apr', total: 11700 },
-  { month: 'Mag', total: 11800 },
-  { month: 'Giu', total: 13800 },
-]
 
-const stats = [
-  {
-    title: 'Ricavi Totali',
-    value: '€67,900',
-    change: '+12.5%',
-    trend: 'up',
-    icon: Euro,
-    color: 'text-finanze-600',
-    bgColor: 'bg-finanze-50',
-  },
-  {
-    title: 'Progetti Attivi',
-    value: '23',
-    change: '+3',
-    trend: 'up',
-    icon: FolderOpen,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-  },
-  {
-    title: 'Clienti Attivi',
-    value: '18',
-    change: '+2',
-    trend: 'up',
-    icon: Users,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-  },
-  {
-    title: 'Margine Medio',
-    value: '68%',
-    change: '-2.1%',
-    trend: 'down',
-    icon: TrendingUp,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-  },
-]
-
-const recentActivities = [
-  {
-    id: 1,
-    type: 'project',
-    title: 'Nuovo progetto matrimonio',
-    description: 'Matrimonio Rossi - 15 Luglio',
-    time: '2 ore fa',
-    area: 'studio',
-    icon: Camera,
-  },
-  {
-    id: 2,
-    type: 'client',
-    title: 'Nuovo cliente acquisito',
-    description: 'Azienda TechCorp per servizi social',
-    time: '4 ore fa',
-    area: 'studio',
-    icon: Users,
-  },
-  {
-    id: 3,
-    type: 'task',
-    title: 'Milestone completata',
-    description: 'MVP Prizm - Validazione utenti',
-    time: '1 giorno fa',
-    area: 'prizm',
-    icon: Lightbulb,
-  },
-  {
-    id: 4,
-    type: 'finance',
-    title: 'Fattura pagata',
-    description: 'Servizio fotografico €2,500',
-    time: '2 giorni fa',
-    area: 'studio',
-    icon: Euro,
-  },
-]
-
-const upcomingTasks = [
-  {
-    id: 1,
-    title: 'Consegna foto matrimonio Bianchi',
-    dueDate: '2024-01-15',
-    priority: 'high',
-    area: 'studio',
-  },
-  {
-    id: 2,
-    title: 'Intervista utenti Prizm',
-    dueDate: '2024-01-16',
-    priority: 'medium',
-    area: 'prizm',
-  },
-  {
-    id: 3,
-    title: 'Aggiornamento turni gennaio',
-    dueDate: '2024-01-18',
-    priority: 'low',
-    area: 'statale',
-  },
-]
 
 export default function Dashboard() {
+  const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [])
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true)
+      const data = await analyticsService.getDashboardStats()
+      setDashboardData(data)
+    } catch (err) {
+      setError('Errore nel caricamento dei dati dashboard')
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const stats = [
+    {
+      title: 'Ricavi Totali',
+      value: dashboardData ? formatCurrency(dashboardData.totalRevenue) : '€0',
+      change: '+12.5%',
+      trend: 'up' as const,
+      icon: Euro,
+      color: 'text-finanze-600',
+      bgColor: 'bg-finanze-50',
+    },
+    {
+      title: 'Progetti Attivi',
+      value: dashboardData?.activeProjects?.toString() || '0',
+      change: '+3',
+      trend: 'up' as const,
+      icon: FolderOpen,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+    },
+    {
+      title: 'Clienti Attivi',
+      value: dashboardData?.activeClients?.toString() || '0',
+      change: '+2',
+      trend: 'up' as const,
+      icon: Users,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+    },
+    {
+      title: 'Margine Medio',
+      value: dashboardData ? `${dashboardData.averageMargin}%` : '0%',
+      change: '-2.1%',
+      trend: 'down' as const,
+      icon: TrendingUp,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+    },
+  ]
+
+  const recentActivities = dashboardData?.recentActivities || []
+  const upcomingTasks = dashboardData?.upcomingTasks || []
+  const revenueData = dashboardData?.monthlyRevenue || defaultRevenueData
+  const areaDistribution = dashboardData?.areaDistribution || defaultAreaDistribution
+  const monthlyTrend = dashboardData?.monthlyTrend || []
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-gray-600">Caricamento dashboard...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+        {error}
+        <Button 
+          onClick={loadDashboardData} 
+          className="ml-4 bg-red-600 hover:bg-red-700 text-white"
+          size="sm"
+        >
+          Riprova
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Notifiche */}
@@ -393,64 +376,3 @@ export default function Dashboard() {
     </div>
   )
 }
-
-
-const [revenueData, setRevenueData] = useState<any[]>([])
-const [areaDistribution, setAreaDistribution] = useState<any[]>([])
-const [monthlyTrend, setMonthlyTrend] = useState<any[]>([])
-const [loadingDashboard, setLoadingDashboard] = useState(false)
-const [dashboardError, setDashboardError] = useState<string | null>(null)
-const [notifications, setNotifications] = useState<{id:string, message:string, type:'info'|'success'|'warning'|'error', read:boolean}[]>([])
-function addNotification(message:string, type:'info'|'success'|'warning'|'error' = 'info') {
-  setNotifications(prev => [...prev, { id: Math.random().toString(36).slice(2), message, type, read: false }])
-}
-// Esempio automazione: reminder globale (placeholder)
-useEffect(() => {
-  // Qui si può inserire logica per reminder globali (es. task/progetti in scadenza)
-}, [])
-
-useEffect(() => {
-  async function fetchDashboardData() {
-    setLoadingDashboard(true)
-    setDashboardError(null)
-    // Fetch all income transactions
-    const { data: transactions, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('type', 'income')
-    if (error) {
-      setDashboardError(error.message)
-      setLoadingDashboard(false)
-      return
-    }
-    // Ricavi mensili per area
-    const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']
-    const areaKeys = ['studio', 'prizm', 'statale']
-    const monthly = months.map((month, idx) => {
-      const monthNum = (idx + 1).toString().padStart(2, '0')
-      const filtered = transactions.filter(t => t.date && t.date.slice(5,7) === monthNum)
-      const entry: any = { month }
-      areaKeys.forEach(area => {
-        entry[area] = filtered.filter(t => t.area === area).reduce((sum, t) => sum + (t.amount || 0), 0)
-      })
-      return entry
-    })
-    setRevenueData(monthly)
-    // Distribuzione per area
-    const areaTotals = areaKeys.map(area => ({
-      name: area === 'studio' ? 'Sokey Studio' : area.charAt(0).toUpperCase() + area.slice(1),
-      value: transactions.filter(t => t.area === area).reduce((sum, t) => sum + (t.amount || 0), 0),
-      color: area === 'studio' ? '#f97316' : area === 'prizm' ? '#3b82f6' : '#22c55e'
-    }))
-    setAreaDistribution(areaTotals)
-    // Trend mensile totale
-    const monthlyTotal = months.map((month, idx) => {
-      const monthNum = (idx + 1).toString().padStart(2, '0')
-      const total = transactions.filter(t => t.date && t.date.slice(5,7) === monthNum).reduce((sum, t) => sum + (t.amount || 0), 0)
-      return { month, total }
-    })
-    setMonthlyTrend(monthlyTotal)
-    setLoadingDashboard(false)
-  }
-  fetchDashboardData()
-}, [])

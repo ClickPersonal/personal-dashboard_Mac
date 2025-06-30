@@ -1,6 +1,27 @@
-# Dashboard Personale Full-Stack
+# Personal Dashboard
 
-Una dashboard web modulare e completa per la gestione di attività business multi-area, sviluppata con React, TypeScript, Tailwind CSS e Supabase.
+Un dashboard personale completo per la gestione di clienti, progetti, task, proposte e transazioni.
+
+## Caratteristiche
+
+- 📊 **Dashboard Analytics**: Panoramica completa con statistiche e grafici
+- 👥 **Gestione Clienti**: CRUD completo per clienti con informazioni dettagliate
+- 📁 **Gestione Progetti**: Tracciamento progetti con status, budget e margini
+- ✅ **Task Management**: Sistema completo di gestione task con priorità e scadenze
+- 📄 **Proposte Commerciali**: Creazione e gestione proposte con tracking status
+- 💰 **Transazioni**: Gestione completa entrate/uscite con categorizzazione
+- 🎨 **UI Moderna**: Interfaccia responsive con design moderno
+- 🔍 **Ricerca e Filtri**: Funzionalità avanzate di ricerca e filtro
+
+## Tecnologie Utilizzate
+
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Tailwind CSS
+- **Database**: Supabase (PostgreSQL)
+- **Routing**: React Router DOM
+- **Charts**: Recharts
+- **Icons**: Lucide React
+- **Deployment**: Vercel
 
 ## 🚀 Caratteristiche Principali
 
@@ -37,7 +58,7 @@ Una dashboard web modulare e completa per la gestione di attività business mult
 
 1. **Clona il repository**
 ```bash
-git clone <repository-url>
+git clone https://github.com/ClickPersonal/personal-dashboard.git
 cd personal-dashboard
 ```
 
@@ -46,16 +67,23 @@ cd personal-dashboard
 npm install
 ```
 
-3. **Configura Supabase**
-   - Crea un nuovo progetto su [supabase.com](https://supabase.com)
-   - Vai su Settings > API
-   - Copia URL e anon key
+3. **Configurazione Supabase**
+
+   #### Crea un Progetto Supabase
+   1. Vai su [supabase.com](https://supabase.com)
+   2. Crea un nuovo progetto
+   3. Annota l'URL del progetto e la chiave API anonima
+
+   #### Configura il Database
+   1. Vai nella sezione "SQL Editor" di Supabase
+   2. Copia e incolla il contenuto del file `database-schema.sql`
+   3. Esegui lo script per creare tutte le tabelle e configurazioni
 
 4. **Configura le variabili d'ambiente**
 ```bash
 # Crea file .env.local
-VITE_SUPABASE_URL=https://ggutuucydkoydxgfxiac.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdndXR1dWN5ZGtveWR4Z2Z4aWFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNTE5MzYsImV4cCI6MjA2NjcyNzkzNn0.4D7TcOXx-FKnbTo04qpAA2Iujue6PIIf9CVB1zWdFL8
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 5. **Avvia il server di sviluppo**
