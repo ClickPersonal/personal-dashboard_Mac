@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Edit, Trash2, TrendingUp, TrendingDown, Calendar, Euro, Download, Filter, BarChart3, PieChart, Eye } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, TrendingUp, TrendingDown, Calendar, Euro, Download, BarChart3, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import type { Transaction, Project } from '@/lib/supabase'
@@ -7,7 +7,7 @@ import type { Transaction, Project } from '@/lib/supabase'
 export function Finanze() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([])
-  const [projects, setProjects] = useState<Project[]>([])
+
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')

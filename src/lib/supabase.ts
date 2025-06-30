@@ -14,6 +14,7 @@ export interface Client {
   company?: string
   email?: string
   phone?: string
+  address?: string
   sector?: string
   active_channels?: string[]
   communication_style?: string
@@ -50,6 +51,8 @@ export interface Task {
   due_date?: string
   assigned_to?: string
   area: 'studio' | 'prizm' | 'statale'
+  estimated_hours?: number
+  tags?: string[]
   created_at: string
   updated_at: string
 }
@@ -57,11 +60,16 @@ export interface Task {
 export interface Transaction {
   id: string
   project_id?: string
+  client_id?: string
   type: 'income' | 'expense'
   amount: number
   category: string
   description?: string
   date: string
+  payment_method?: 'cash' | 'bank_transfer' | 'credit_card' | 'paypal' | 'other'
+  status?: 'pending' | 'completed' | 'cancelled'
+  invoice_number?: string
+  notes?: string
   area: 'studio' | 'prizm' | 'statale'
   created_at: string
   updated_at: string
@@ -72,6 +80,7 @@ export interface Proposal {
   client_id: string
   project_id?: string
   title: string
+  description?: string
   services: string[]
   amount: number
   discount?: number

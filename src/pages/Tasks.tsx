@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Plus, Search, Edit, Trash2, CheckSquare, Clock, Flag, Filter, Calendar } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Search, Edit, Trash2, CheckSquare, Clock, Flag, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { AddTaskModal } from '@/components/modals/AddTaskModal'
@@ -93,9 +93,9 @@ export function Tasks() {
   }
 
   const handleToggleStatus = async (task: Task) => {
-    const newStatus = task.status === 'done' ? 'todo' : 'done'
+    const newStatus = task.status === 'completed' ? 'todo' : 'completed'
     try {
-      const updatedTask = await taskService.update(task.id, { status: newStatus })
+      const updatedTask = await taskService.update(task.id, { status: newStatus as 'todo' | 'in_progress' | 'completed' })
       setTasks(prev => prev.map(t => t.id === task.id ? updatedTask : t))
     } catch (err) {
       console.error('Error updating task status:', err)
@@ -305,7 +305,7 @@ export function Tasks() {
         </Card>
         <Card className="p-4">
           <div className="text-2xl font-bold text-green-600">
-            {tasks.filter(t => t.status === 'done').length}
+            {tasks.filter(t => t.status === 'completed').length}
           </div>
           <div className="text-sm text-gray-600">Completati</div>
         </Card>
@@ -345,15 +345,15 @@ export function Tasks() {
                     <button
                       onClick={() => handleToggleStatus(task)}
                       className={`p-1 rounded transition-colors ${
-                        task.status === 'done' 
+                        task.status === 'completed' 
                           ? 'text-green-600 hover:text-green-700' 
                           : 'text-gray-400 hover:text-gray-600'
                       }`}
                     >
-                      <CheckSquare className={`h-5 w-5 ${task.status === 'done' ? 'fill-current' : ''}`} />
+                      <CheckSquare className={`h-5 w-5 ${task.status === 'completed' ? 'fill-current' : ''}`} />
                     </button>
                     <h3 className={`text-lg font-semibold ${
-                      task.status === 'done' ? 'text-gray-500 line-through' : 'text-gray-900'
+                      task.status === 'completed' ? 'text-gray-500 line-through' : 'text-gray-900'
                     }`}>
                       {task.title}
                     </h3>

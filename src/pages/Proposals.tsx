@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Plus, Search, Edit, Trash2, FileText, Calendar, DollarSign, Filter, Eye } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Search, Edit, Trash2, Calendar, DollarSign, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { AddProposalModal } from '@/components/modals/AddProposalModal'
@@ -63,7 +63,6 @@ export function Proposals() {
 
     if (dateFilter) {
       const today = new Date()
-      const filterDate = new Date(dateFilter)
       
       switch (dateFilter) {
         case 'expired':

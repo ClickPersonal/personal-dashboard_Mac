@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Eye, Phone, Mail, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -155,13 +155,13 @@ export function Clients() {
         </Card>
         <Card className="p-4">
           <div className="text-2xl font-bold text-yellow-600">
-            {clients.filter(c => c.status === 'potential').length}
+            {clients.filter(c => c.status === 'prospect').length}
           </div>
           <div className="text-sm text-gray-600">Clienti Potenziali</div>
         </Card>
         <Card className="p-4">
           <div className="text-2xl font-bold text-gray-600">
-            {clients.filter(c => c.status === 'inactive').length}
+            {clients.filter(c => c.status === 'lead').length}
           </div>
           <div className="text-sm text-gray-600">Clienti Inattivi</div>
         </Card>

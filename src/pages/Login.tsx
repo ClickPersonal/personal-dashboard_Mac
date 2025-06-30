@@ -11,7 +11,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     const { error } = await signIn(email, password);
-    if (error) setError(error.message);
+    if (error) setError(error?.message || 'An error occurred');
   };
 
   return (

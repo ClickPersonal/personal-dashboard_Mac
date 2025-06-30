@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { formatCurrency } from '@/lib/utils'
@@ -59,11 +59,9 @@ import {
   FolderOpen,
   Calendar,
   Euro,
-  Camera,
-  Lightbulb,
+
 
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 
 // Default data structure
 const defaultRevenueData = [
