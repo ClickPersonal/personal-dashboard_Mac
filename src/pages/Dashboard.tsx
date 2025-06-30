@@ -29,7 +29,6 @@ import {
   Lightbulb,
 
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 // Default data structure
