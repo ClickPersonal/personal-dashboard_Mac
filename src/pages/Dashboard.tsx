@@ -3,7 +3,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/Button'
 import { formatCurrency } from '@/lib/utils'
 import { analyticsService } from '@/lib/database'
-import type { DashboardStats } from '@/lib/database'
+interface DashboardStats {
+  totalRevenue: number;
+  activeProjects: number;
+  activeClients: number;
+  averageMargin: number;
+  recentActivities: Array<{
+    id: string;
+    title: string;
+    description: string;
+    time: string;
+    icon: any;
+  }>;
+  upcomingTasks: Array<{
+    id: string;
+    title: string;
+    dueDate: string;
+    area: string;
+    priority: 'high' | 'medium' | 'low';
+  }>;
+  monthlyRevenue: Array<{
+    month: string;
+    studio: number;
+    prizm: number;
+    statale: number;
+  }>;
+  areaDistribution: Array<{
+    name: string;
+    value: number;
+    color: string;
+  }>;
+  monthlyTrend: Array<{
+    month: string;
+    total: number;
+  }>;
+}
 import {
   BarChart,
   Bar,
@@ -62,7 +96,17 @@ export default function Dashboard() {
     try {
       setLoading(true)
       const data = await analyticsService.getDashboardStats()
-      setDashboardData(data)
+      setDashboardData({
+        totalRevenue: data.totalRevenue,
+        activeProjects: data.activeProjects,
+        activeClients: data.activeClients,
+        averageMargin: data.avgMargin,
+        recentActivities: (data as any).recentActivities || [],
+        upcomingTasks: (data as any).upcomingTasks || [],
+        monthlyRevenue: (data as any).monthlyRevenue || defaultRevenueData,
+        areaDistribution: (data as any).areaDistribution || defaultAreaDistribution,
+        monthlyTrend: (data as any).monthlyTrend || []
+      })
     } catch (err) {
       setError('Errore nel caricamento dei dati dashboard')
       console.error(err)
@@ -141,16 +185,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Notifiche */}
-      {notifications.length > 0 && (
-        <div className="space-y-2">
-          {notifications.filter(n => !n.read).map(n => (
-            <div key={n.id} className={`rounded p-3 text-sm font-medium shadow ${n.type === 'warning' ? 'bg-yellow-100 text-yellow-800' : n.type === 'success' ? 'bg-green-100 text-green-800' : n.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
-              {n.message}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Notifiche - Sezione rimossa temporaneamente */}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
