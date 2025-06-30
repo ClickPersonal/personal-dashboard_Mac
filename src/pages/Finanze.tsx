@@ -1,1003 +1,792 @@
-import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { useState, useEffect } from 'react'
+import { Plus, Search, Edit, Trash2, TrendingUp, TrendingDown, Calendar, Euro, Download, Filter, BarChart3, PieChart, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { formatCurrency, formatDate, calculateMargin, calculateROI } from '@/lib/utils'
-import {
-  Plus,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  PieChart,
-  Download,
-  Filter,
-  Search,
-  ArrowUpRight,
-  ArrowDownRight,
-  Eye,
-  Edit,
-  Target,
-  Briefcase,
-  Building,
-  Home,
-} from 'lucide-react'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  Line,
-  Area,
-  AreaChart,
-} from 'recharts'
+import { Card } from '@/components/ui/Card'
+import type { Transaction, Project } from '@/lib/supabase'
 
-// Mock data
-const areas = [
-  { id: 'studio', name: 'Sokey Studio', color: '#8B5CF6' },
-  { id: 'prizm', name: 'Prizm', color: '#06B6D4' },
-  { id: 'statale', name: 'Lavoro Statale', color: '#10B981' },
-]
-
-const transactions = [
-  {
-    id: '1',
-    date: '2024-01-15',
-    description: 'Servizio fotografico matrimonio',
-    amount: 1500,
-    type: 'income',
-    area: 'studio',
-    category: 'Fotografia',
-    client: 'Marco & Laura',
-    status: 'completed',
-    invoiceNumber: 'INV-2024-001',
-  },
-  {
-    id: '2',
-    date: '2024-01-14',
-    description: 'Acquisto attrezzatura fotografica',
-    amount: -800,
-    type: 'expense',
-    area: 'studio',
-    category: 'Attrezzature',
-    client: null,
-    status: 'paid',
-    invoiceNumber: null,
-  },
-  {
-    id: '3',
-    date: '2024-01-12',
-    description: 'Consulenza sviluppo MVP',
-    amount: 2500,
-    type: 'income',
-    area: 'prizm',
-    category: 'Consulenza',
-    client: 'TechStart Inc',
-    status: 'completed',
-    invoiceNumber: 'INV-2024-002',
-  },
-  {
-    id: '4',
-    date: '2024-01-10',
-    description: 'Stipendio mensile',
-    amount: 2800,
-    type: 'income',
-    area: 'statale',
-    category: 'Stipendio',
-    client: 'Ente Pubblico',
-    status: 'received',
-    invoiceNumber: null,
-  },
-  {
-    id: '5',
-    date: '2024-01-08',
-    description: 'Abbonamento software editing',
-    amount: -50,
-    type: 'expense',
-    area: 'studio',
-    category: 'Software',
-    client: null,
-    status: 'paid',
-    invoiceNumber: null,
-  },
-  {
-    id: '6',
-    date: '2024-01-05',
-    description: 'Hosting e dominio',
-    amount: -120,
-    type: 'expense',
-    area: 'prizm',
-    category: 'Infrastruttura',
-    client: null,
-    status: 'paid',
-    invoiceNumber: null,
-  },
-]
-
-const monthlyData = [
-  { month: 'Gen', studio: 4200, prizm: 1800, statale: 2800, expenses: -2100 },
-  { month: 'Feb', studio: 3800, prizm: 2200, statale: 2800, expenses: -1900 },
-  { month: 'Mar', studio: 5100, prizm: 1500, statale: 2800, expenses: -2400 },
-  { month: 'Apr', studio: 4600, prizm: 2800, statale: 2800, expenses: -2200 },
-  { month: 'Mag', studio: 3900, prizm: 3200, statale: 2800, expenses: -2000 },
-  { month: 'Giu', studio: 5400, prizm: 2100, statale: 2800, expenses: -2600 },
-]
-
-const cashflowData = [
-  { month: 'Gen', income: 8800, expenses: 2100, net: 6700 },
-  { month: 'Feb', income: 8800, expenses: 1900, net: 6900 },
-  { month: 'Mar', income: 9400, expenses: 2400, net: 7000 },
-  { month: 'Apr', income: 10200, expenses: 2200, net: 8000 },
-  { month: 'Mag', income: 9900, expenses: 2000, net: 7900 },
-  { month: 'Giu', income: 10300, expenses: 2600, net: 7700 },
-]
-
-const areaDistribution = [
-  { name: 'Sokey Studio', value: 45, amount: 26700, color: '#8B5CF6' },
-  { name: 'Prizm', value: 25, amount: 14800, color: '#06B6D4' },
-  { name: 'Lavoro Statale', value: 30, amount: 16800, color: '#10B981' },
-]
-
-const categoryExpenses = [
-  { name: 'Attrezzature', value: 35, amount: 4200, color: '#EF4444' },
-  { name: 'Software', value: 20, amount: 2400, color: '#F59E0B' },
-  { name: 'Marketing', value: 15, amount: 1800, color: '#8B5CF6' },
-  { name: 'Infrastruttura', value: 20, amount: 2400, color: '#06B6D4' },
-  { name: 'Altro', value: 10, amount: 1200, color: '#6B7280' },
-]
-
-const kpis = [
-  {
-    title: 'Entrate Totali',
-    value: 58300,
-    change: 12.5,
-    trend: 'up',
-    icon: TrendingUp,
-    color: 'green',
-  },
-  {
-    title: 'Spese Totali',
-    value: 12000,
-    change: -8.2,
-    trend: 'down',
-    icon: TrendingDown,
-    color: 'red',
-  },
-  {
-    title: 'Utile Netto',
-    value: 46300,
-    change: 18.7,
-    trend: 'up',
-    icon: DollarSign,
-    color: 'green',
-  },
-  {
-    title: 'ROI Medio',
-    value: 285,
-    change: 15.3,
-    trend: 'up',
-    icon: Target,
-    suffix: '%',
-    color: 'blue',
-  },
-]
-
-const getAreaIcon = (areaId: string) => {
-  switch (areaId) {
-    case 'studio': return Briefcase
-    case 'prizm': return Building
-    case 'statale': return Home
-    default: return DollarSign
-  }
-}
-
-const getAreaColor = (areaId: string) => {
-  switch (areaId) {
-    case 'studio': return 'studio'
-    case 'prizm': return 'prizm'
-    case 'statale': return 'statale'
-    default: return 'gray'
-  }
-}
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'completed':
-    case 'received':
-    case 'paid':
-      return 'bg-green-50 text-green-700'
-    case 'pending':
-      return 'bg-yellow-50 text-yellow-700'
-    case 'overdue':
-      return 'bg-red-50 text-red-700'
-    default:
-      return 'bg-gray-50 text-gray-700'
-  }
-}
-
-export default function Finanze() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'studio' | 'prizm' | 'statale' | 'transactions'>('overview')
-  const [selectedPeriod, setSelectedPeriod] = useState('2024-01')
+export function Finanze() {
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedArea, setSelectedArea] = useState('all')
+  const [typeFilter, setTypeFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [areaFilter, setAreaFilter] = useState('')
+  const [dateFilter, setDateFilter] = useState('')
+  const [selectedPeriod, setSelectedPeriod] = useState('month')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
 
-  // Stato CRUD Supabase
-  const [transactionsData, setTransactionsData] = useState<any[]>([])
-  const [loadingTransactions, setLoadingTransactions] = useState(false)
-  const [errorTransactions, setErrorTransactions] = useState<string | null>(null)
-  const [showCreateTransactionModal, setShowCreateTransactionModal] = useState(false)
-  const [createTransactionData, setCreateTransactionData] = useState({
-    date: '',
-    description: '',
+  // Form states
+  const [formData, setFormData] = useState({
+    type: 'income' as 'income' | 'expense',
     amount: 0,
-    type: 'income',
-    area: '',
     category: '',
-    client: '',
-    status: '',
-    invoiceNumber: ''
+    description: '',
+    date: new Date().toISOString().split('T')[0],
+    area: 'studio' as 'studio' | 'prizm' | 'statale',
+    project_id: ''
   })
-  const [creatingTransaction, setCreatingTransaction] = useState(false)
-  const [createTransactionError, setCreateTransactionError] = useState<string | null>(null)
-  const [showEditTransactionModal, setShowEditTransactionModal] = useState(false)
-  const [editTransactionData, setEditTransactionData] = useState<any>(null)
-  const [savingTransactionEdit, setSavingTransactionEdit] = useState(false)
-  const [editTransactionError, setEditTransactionError] = useState<string | null>(null)
-  const [showDeleteTransactionModal, setShowDeleteTransactionModal] = useState(false)
-  const [deleteTransactionId, setDeleteTransactionId] = useState<string | null>(null)
-  const [deletingTransaction, setDeletingTransaction] = useState(false)
-  const [deleteTransactionError, setDeleteTransactionError] = useState<string | null>(null)
 
-  // CRUD Supabase
-  const fetchTransactions = async () => {
-    setLoadingTransactions(true)
-    setErrorTransactions(null)
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  useEffect(() => {
+    filterTransactions()
+  }, [transactions, searchTerm, typeFilter, categoryFilter, areaFilter, dateFilter, selectedPeriod])
+
+  const loadData = async () => {
     try {
-      const { data, error } = await window.supabase
-        .from('transactions')
-        .select('*')
-        .order('date', { ascending: false })
-      if (error) throw error
-      setTransactionsData(data)
-    } catch (err: any) {
-      setErrorTransactions(err.message)
+      setLoading(true)
+      // Simulated data loading - replace with actual Supabase calls
+      const mockTransactions: Transaction[] = [
+        {
+          id: '1',
+          type: 'income',
+          amount: 2500,
+          category: 'Consulenza',
+          description: 'Sviluppo sito web cliente ABC',
+          date: '2024-01-15',
+          area: 'studio',
+          created_at: '2024-01-15T10:00:00Z',
+          updated_at: '2024-01-15T10:00:00Z'
+        },
+        {
+          id: '2',
+          type: 'expense',
+          amount: 150,
+          category: 'Software',
+          description: 'Licenza Adobe Creative Suite',
+          date: '2024-01-10',
+          area: 'studio',
+          created_at: '2024-01-10T09:00:00Z',
+          updated_at: '2024-01-10T09:00:00Z'
+        },
+        {
+          id: '3',
+          type: 'income',
+          amount: 1800,
+          category: 'Progetto',
+          description: 'Pagamento milestone progetto XYZ',
+          date: '2024-01-20',
+          area: 'prizm',
+          created_at: '2024-01-20T14:00:00Z',
+          updated_at: '2024-01-20T14:00:00Z'
+        }
+      ]
+      setTransactions(mockTransactions)
+    } catch (err) {
+      setError('Errore nel caricamento delle transazioni')
+      console.error(err)
     } finally {
-      setLoadingTransactions(false)
+      setLoading(false)
     }
   }
 
-  const handleOpenCreateTransaction = () => {
-    setCreateTransactionData({
-      date: '',
-      description: '',
-      amount: 0,
-      type: 'income',
-      area: '',
-      category: '',
-      client: '',
-      status: '',
-      invoiceNumber: ''
-    })
-    setShowCreateTransactionModal(true)
-    setCreateTransactionError(null)
+  const filterTransactions = () => {
+    let filtered = transactions
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(transaction =>
+        (transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+        (transaction.category?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
+      )
+    }
+
+    // Type filter
+    if (typeFilter) {
+      filtered = filtered.filter(transaction => transaction.type === typeFilter)
+    }
+
+    // Category filter
+    if (categoryFilter) {
+      filtered = filtered.filter(transaction => transaction.category === categoryFilter)
+    }
+
+    // Area filter
+    if (areaFilter) {
+      filtered = filtered.filter(transaction => transaction.area === areaFilter)
+    }
+
+    // Date filter
+    if (dateFilter) {
+      const filterDate = new Date(dateFilter)
+      const filterMonth = filterDate.getMonth()
+      const filterYear = filterDate.getFullYear()
+      
+      filtered = filtered.filter(transaction => {
+        const transactionDate = new Date(transaction.date)
+        return transactionDate.getMonth() === filterMonth && transactionDate.getFullYear() === filterYear
+      })
+    }
+
+    // Period filter
+    const now = new Date()
+    if (selectedPeriod === 'week') {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      filtered = filtered.filter(t => new Date(t.date) >= weekAgo)
+    } else if (selectedPeriod === 'month') {
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      filtered = filtered.filter(t => new Date(t.date) >= monthAgo)
+    } else if (selectedPeriod === 'year') {
+      const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+      filtered = filtered.filter(t => new Date(t.date) >= yearAgo)
+    }
+
+    setFilteredTransactions(filtered)
   }
 
   const handleCreateTransaction = async () => {
-    setCreatingTransaction(true)
-    setCreateTransactionError(null)
     try {
-      const { error } = await window.supabase
-        .from('transactions')
-        .insert([createTransactionData])
-      if (error) throw error
-      setShowCreateTransactionModal(false)
-      fetchTransactions()
-    } catch (err: any) {
-      setCreateTransactionError(err.message)
-    } finally {
-      setCreatingTransaction(false)
+      // Simulate API call
+      const newTransaction: Transaction = {
+        id: Date.now().toString(),
+        ...formData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      setTransactions(prev => [newTransaction, ...prev])
+      setShowCreateModal(false)
+      resetForm()
+    } catch (err) {
+      console.error('Error creating transaction:', err)
     }
   }
 
-  const handleOpenEditTransaction = (transaction: any) => {
-    setEditTransactionData(transaction)
-    setShowEditTransactionModal(true)
-    setEditTransactionError(null)
-  }
-
-  const handleSaveEditTransaction = async () => {
-    if (!editTransactionData) return
-    setSavingTransactionEdit(true)
-    setEditTransactionError(null)
+  const handleEditTransaction = async () => {
+    if (!editingTransaction) return
+    
     try {
-      const { error } = await window.supabase
-        .from('transactions')
-        .update(editTransactionData)
-        .eq('id', editTransactionData.id)
-      if (error) throw error
-      setShowEditTransactionModal(false)
-      fetchTransactions()
-    } catch (err: any) {
-      setEditTransactionError(err.message)
-    } finally {
-      setSavingTransactionEdit(false)
+      const updatedTransaction: Transaction = {
+        ...editingTransaction,
+        ...formData,
+        updated_at: new Date().toISOString()
+      }
+      setTransactions(prev => prev.map(t => t.id === editingTransaction.id ? updatedTransaction : t))
+      setShowEditModal(false)
+      setEditingTransaction(null)
+      resetForm()
+    } catch (err) {
+      console.error('Error updating transaction:', err)
     }
   }
 
-  const handleOpenDeleteTransaction = (id: string) => {
-    setDeleteTransactionId(id)
-    setShowDeleteTransactionModal(true)
-    setDeleteTransactionError(null)
-  }
+  const handleDeleteTransaction = async (transactionId: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questa transazione?')) {
+      return
+    }
 
-  const handleDeleteTransaction = async () => {
-    if (!deleteTransactionId) return
-    setDeletingTransaction(true)
-    setDeleteTransactionError(null)
     try {
-      const { error } = await window.supabase
-        .from('transactions')
-        .delete()
-        .eq('id', deleteTransactionId)
-      if (error) throw error
-      setShowDeleteTransactionModal(false)
-      fetchTransactions()
-    } catch (err: any) {
-      setDeleteTransactionError(err.message)
-    } finally {
-      setDeletingTransaction(false)
+      setTransactions(prev => prev.filter(transaction => transaction.id !== transactionId))
+    } catch (err) {
+      console.error('Error deleting transaction:', err)
     }
   }
 
-  // Carica le transazioni da Supabase al mount
-  useEffect(() => {
-    fetchTransactions()
-  }, [])
+  const openEditModal = (transaction: Transaction) => {
+    setEditingTransaction(transaction)
+    setFormData({
+      type: transaction.type,
+      amount: transaction.amount,
+      category: transaction.category,
+      description: transaction.description || '',
+      date: transaction.date,
+      area: transaction.area,
+      project_id: transaction.project_id || ''
+    })
+    setShowEditModal(true)
+  }
 
-  const filteredTransactions = transactionsData.filter((transaction: any) => {
-    const matchesSearch = transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (transaction.client && transaction.client.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesArea = selectedArea === 'all' || transaction.area === selectedArea
-    return matchesSearch && matchesArea
+  const resetForm = () => {
+    setFormData({
+      type: 'income',
+      amount: 0,
+      category: '',
+      description: '',
+      date: new Date().toISOString().split('T')[0],
+      area: 'studio',
+      project_id: ''
+    })
+  }
+
+  // Calculate statistics
+  const totalIncome = filteredTransactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0)
+
+  const totalExpenses = filteredTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0)
+
+  const netProfit = totalIncome - totalExpenses
+
+  // Get unique categories and areas for filters
+  const categories = [...new Set(transactions.map(t => t.category))].sort()
+  const areas = ['studio', 'prizm', 'statale']
+
+  // Category breakdown
+  const categoryBreakdown = categories.map(category => {
+    const categoryTransactions = filteredTransactions.filter(t => t.category === category)
+    const income = categoryTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
+    const expenses = categoryTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
+    return { category, income, expenses, net: income - expenses }
   })
 
-  const getAreaStats = (areaId: string) => {
-    const areaTransactions = transactions.filter(t => t.area === areaId)
-    const income = areaTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
-    const expenses = Math.abs(areaTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0))
-    const net = income - expenses
-    const margin = calculateMargin(income, expenses)
-    const roi = calculateROI(net, expenses)
-    
-    return { income, expenses, net, margin, roi }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-gray-600">Caricamento dati finanziari...</div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Finanze</h1>
-          <p className="text-muted-foreground mt-1">
-            Gestione finanziaria completa per tutte le aree di business
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">Finanze</h1>
+          <p className="text-gray-600">Gestione completa delle finanze aziendali</p>
         </div>
-        <div className="flex space-x-3">
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Esporta
-          </Button>
-          <Button onClick={handleOpenCreateTransaction}>
-            <Plus className="w-4 h-4 mr-2" />
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
             Nuova Transazione
           </Button>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Esporta
+          </Button>
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi) => {
-          const Icon = kpi.icon
-          
-          return (
-            <Card key={kpi.title} className="card-hover">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {kpi.title}
-                    </p>
-                    <p className="text-2xl font-bold text-foreground mt-1">
-                      {kpi.suffix === '%' ? `${kpi.value}${kpi.suffix}` : formatCurrency(kpi.value)}
-                    </p>
-                    <div className="flex items-center mt-2">
-                      {kpi.trend === 'up' ? (
-                        <ArrowUpRight className="w-4 h-4 text-green-600 mr-1" />
-                      ) : (
-                        <ArrowDownRight className="w-4 h-4 text-red-600 mr-1" />
-                      )}
-                      <span className={`text-sm font-medium ${
-                        kpi.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {kpi.change > 0 ? '+' : ''}{kpi.change}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className={`p-3 rounded-lg ${
-                    kpi.color === 'green' ? 'bg-green-50' :
-                    kpi.color === 'red' ? 'bg-red-50' :
-                    kpi.color === 'blue' ? 'bg-blue-50' : 'bg-gray-50'
-                  }`}>
-                    <Icon className={`w-6 h-6 ${
-                      kpi.color === 'green' ? 'text-green-600' :
-                      kpi.color === 'red' ? 'text-red-600' :
-                      kpi.color === 'blue' ? 'text-blue-600' : 'text-gray-600'
-                    }`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      {/* Tabs */}
-      <div className="border-b border-border">
-        <nav className="flex space-x-8">
-          {[
-            { id: 'overview', label: 'Panoramica', icon: PieChart },
-            { id: 'studio', label: 'Sokey Studio', icon: Briefcase },
-            { id: 'prizm', label: 'Prizm', icon: Building },
-            { id: 'statale', label: 'Lavoro Statale', icon: Home },
-            { id: 'transactions', label: 'Transazioni', icon: DollarSign },
-          ].map((tab) => {
-            const Icon = tab.icon
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </button>
-            )
-          })}
-        </nav>
-      </div>
-
-      {/* Content */}
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Cashflow Chart */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Andamento Cashflow</CardTitle>
-              <CardDescription>Entrate, uscite e utile netto mensile</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={cashflowData}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="month" className="text-muted-foreground" />
-                    <YAxis className="text-muted-foreground" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                      formatter={(value: number) => [formatCurrency(value), '']}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="income" 
-                      stackId="1" 
-                      stroke="#10B981" 
-                      fill="#10B981" 
-                      fillOpacity={0.6}
-                      name="Entrate"
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="expenses" 
-                      stackId="2" 
-                      stroke="#EF4444" 
-                      fill="#EF4444" 
-                      fillOpacity={0.6}
-                      name="Spese"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="net" 
-                      stroke="#8B5CF6" 
-                      strokeWidth={3}
-                      name="Utile Netto"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Area Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Distribuzione per Area</CardTitle>
-              <CardDescription>Contributo di ogni area al fatturato</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPieChart>
-                    <Pie
-                      data={areaDistribution}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {areaDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: number, name: string, props: any) => [
-                        `${value}% (${formatCurrency(props.payload.amount)})`,
-                        name
-                      ]}
-                    />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-2 mt-4">
-                {areaDistribution.map((area) => (
-                  <div key={area.name} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: area.color }}
-                      />
-                      <span className="text-sm text-foreground">{area.name}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-medium text-foreground">
-                        {formatCurrency(area.amount)}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        ({area.value}%)
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Expense Categories */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Categorie di Spesa</CardTitle>
-              <CardDescription>Distribuzione delle spese per categoria</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPieChart>
-                    <Pie
-                      data={categoryExpenses}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {categoryExpenses.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: number, name: string, props: any) => [
-                        `${value}% (${formatCurrency(props.payload.amount)})`,
-                        name
-                      ]}
-                    />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-2 mt-4">
-                {categoryExpenses.map((category) => (
-                  <div key={category.name} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: category.color }}
-                      />
-                      <span className="text-sm text-foreground">{category.name}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-medium text-foreground">
-                        {formatCurrency(category.amount)}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        ({category.value}%)
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Monthly Comparison */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Confronto Mensile per Area</CardTitle>
-              <CardDescription>Performance finanziaria di ogni area</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="month" className="text-muted-foreground" />
-                    <YAxis className="text-muted-foreground" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                      formatter={(value: number) => [formatCurrency(value), '']}
-                    />
-                    <Bar dataKey="studio" fill="#8B5CF6" name="Sokey Studio" />
-                    <Bar dataKey="prizm" fill="#06B6D4" name="Prizm" />
-                    <Bar dataKey="statale" fill="#10B981" name="Lavoro Statale" />
-                    <Bar dataKey="expenses" fill="#EF4444" name="Spese" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Area-specific tabs */}
-      {(activeTab === 'studio' || activeTab === 'prizm' || activeTab === 'statale') && (
-        <div className="space-y-6">
-          {(() => {
-            const areaStats = getAreaStats(activeTab)
-            const areaInfo = areas.find(a => a.id === activeTab)!
-            const AreaIcon = getAreaIcon(activeTab)
-            
-            return (
-              <>
-                {/* Area Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Entrate</p>
-                          <p className="text-2xl font-bold text-green-600 mt-1">
-                            {formatCurrency(areaStats.income)}
-                          </p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-green-50">
-                          <TrendingUp className="w-6 h-6 text-green-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Spese</p>
-                          <p className="text-2xl font-bold text-red-600 mt-1">
-                            {formatCurrency(areaStats.expenses)}
-                          </p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-red-50">
-                          <TrendingDown className="w-6 h-6 text-red-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Utile Netto</p>
-                          <p className="text-2xl font-bold text-foreground mt-1">
-                            {formatCurrency(areaStats.net)}
-                          </p>
-                        </div>
-                        <div className={`p-3 rounded-lg bg-${getAreaColor(activeTab)}-50`}>
-                          <AreaIcon className={`w-6 h-6 text-${getAreaColor(activeTab)}-600`} />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">ROI</p>
-                          <p className="text-2xl font-bold text-blue-600 mt-1">
-                            {areaStats.roi}%
-                          </p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-blue-50">
-                          <Target className="w-6 h-6 text-blue-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Area Transactions */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Transazioni {areaInfo.name}</CardTitle>
-                    <CardDescription>Storico movimenti finanziari</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {transactions
-                        .filter(t => t.area === activeTab)
-                        .slice(0, 10)
-                        .map((transaction) => (
-                          <div key={transaction.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                            <div className="flex items-center space-x-4">
-                              <div className={`p-2 rounded-lg ${
-                                transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'
-                              }`}>
-                                {transaction.type === 'income' ? (
-                                  <ArrowUpRight className="w-4 h-4 text-green-600" />
-                                ) : (
-                                  <ArrowDownRight className="w-4 h-4 text-red-600" />
-                                )}
-                              </div>
-                              <div>
-                                <p className="font-medium text-foreground">{transaction.description}</p>
-                                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                                  <span>{formatDate(transaction.date)}</span>
-                                  <span>•</span>
-                                  <span>{transaction.category}</span>
-                                  {transaction.client && (
-                                    <>
-                                      <span>•</span>
-                                      <span>{transaction.client}</span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className={`text-lg font-bold ${
-                                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                              }`}>
-                                {transaction.type === 'income' ? '+' : ''}{formatCurrency(transaction.amount)}
-                              </p>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
-                                {transaction.status}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </>
-            )
-          })()}
-        </div>
-      )}
-
-      {activeTab === 'transactions' && (
-        <div className="space-y-6">
-          {/* Filters */}
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Cerca transazioni..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input-field pl-10"
-              />
-            </div>
-            <select
-              value={selectedArea}
-              onChange={(e) => setSelectedArea(e.target.value)}
-              className="input-field"
+      {/* Period Selector */}
+      <Card className="p-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="text-sm font-medium text-gray-700">Periodo:</span>
+          {['week', 'month', 'quarter', 'year', 'all'].map(period => (
+            <button
+              key={period}
+              onClick={() => setSelectedPeriod(period)}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                selectedPeriod === period
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
             >
-              <option value="all">Tutte le aree</option>
-              {areas.map((area) => (
-                <option key={area.id} value={area.id}>{area.name}</option>
-              ))}
-            </select>
+              {period === 'week' && 'Settimana'}
+              {period === 'month' && 'Mese'}
+              {period === 'quarter' && 'Trimestre'}
+              {period === 'year' && 'Anno'}
+              {period === 'all' && 'Tutto'}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-3xl font-bold text-green-600">€{totalIncome.toLocaleString('it-IT')}</div>
+              <div className="text-sm text-gray-600">Entrate Totali</div>
+            </div>
+            <TrendingUp className="h-8 w-8 text-green-600" />
+          </div>
+        </Card>
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-3xl font-bold text-red-600">€{totalExpenses.toLocaleString('it-IT')}</div>
+              <div className="text-sm text-gray-600">Uscite Totali</div>
+            </div>
+            <TrendingDown className="h-8 w-8 text-red-600" />
+          </div>
+        </Card>
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className={`text-3xl font-bold ${
+                netProfit >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                €{netProfit.toLocaleString('it-IT')}
+              </div>
+              <div className="text-sm text-gray-600">Profitto Netto</div>
+            </div>
+            <Euro className={`h-8 w-8 ${
+              netProfit >= 0 ? 'text-green-600' : 'text-red-600'
+            }`} />
+          </div>
+        </Card>
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-3xl font-bold text-blue-600">{filteredTransactions.length}</div>
+              <div className="text-sm text-gray-600">Transazioni</div>
+            </div>
+            <Calendar className="h-8 w-8 text-blue-600" />
+          </div>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="p-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
-              type="month"
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="input-field"
+              type="text"
+              placeholder="Cerca transazioni..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-            <Button variant="outline">
-              <Filter className="w-4 h-4 mr-2" />
-              Filtri
+          </div>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Tutti i tipi</option>
+            <option value="income">Entrate</option>
+            <option value="expense">Uscite</option>
+          </select>
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Tutte le categorie</option>
+            {categories.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+          <select
+            value={areaFilter}
+            onChange={(e) => setAreaFilter(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Tutte le aree</option>
+            {areas.map(area => (
+              <option key={area} value={area}>
+                {area === 'studio' && 'Studio'}
+                {area === 'prizm' && 'Prizm'}
+                {area === 'statale' && 'Statale'}
+              </option>
+            ))}
+          </select>
+          <input
+            type="month"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                setSearchTerm('')
+                setTypeFilter('')
+                setCategoryFilter('')
+                setAreaFilter('')
+                setDateFilter('')
+              }}
+              variant="outline"
+              className="flex-1"
+            >
+              Reset
+            </Button>
+            <Button
+              onClick={() => setViewMode(viewMode === 'table' ? 'cards' : 'table')}
+              variant="outline"
+              className="px-3"
+            >
+              {viewMode === 'table' ? <Eye className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
             </Button>
           </div>
+        </div>
+      </Card>
 
-          {/* Transactions Table */}
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Data</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Descrizione</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Area</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Categoria</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Cliente</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Importo</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Stato</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Azioni</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTransactions.map((transaction) => {
-                      const areaInfo = areas.find(a => a.id === transaction.area)!
-                      
-                      return (
-                        <tr key={transaction.id} className="border-b border-border hover:bg-muted/50">
-                          <td className="py-3 px-4">
-                            <span className="text-foreground">{formatDate(transaction.date)}</span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div>
-                              <p className="font-medium text-foreground">{transaction.description}</p>
-                              {transaction.invoiceNumber && (
-                                <p className="text-sm text-muted-foreground">{transaction.invoiceNumber}</p>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium bg-${getAreaColor(transaction.area)}-50 text-${getAreaColor(transaction.area)}-700`}>
-                              {areaInfo.name}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="text-foreground">{transaction.category}</span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="text-foreground">{transaction.client || '-'}</span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`font-bold ${
-                              transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {transaction.type === 'income' ? '+' : ''}{formatCurrency(transaction.amount)}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
-                              {transaction.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex space-x-2">
-                              <Button size="sm" variant="outline">
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => handleOpenEditTransaction(transaction)}>
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleOpenDeleteTransaction(transaction.id)}>
-                                Elimina
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
         </div>
       )}
 
-      {/* Modali CRUD Transazioni */}
-      {showCreateTransactionModal && (
-        <Dialog open={showCreateTransactionModal} onOpenChange={setShowCreateTransactionModal}>
-          <Dialog.Content>
-            <Dialog.Title>Nuova Transazione</Dialog.Title>
-            <div className="space-y-2">
-              <input className="input" placeholder="Data" type="date" value={createTransactionData.date} onChange={e => setCreateTransactionData({ ...createTransactionData, date: e.target.value })} />
-              <input className="input" placeholder="Descrizione" value={createTransactionData.description} onChange={e => setCreateTransactionData({ ...createTransactionData, description: e.target.value })} />
-              <input className="input" placeholder="Importo" type="number" value={createTransactionData.amount} onChange={e => setCreateTransactionData({ ...createTransactionData, amount: Number(e.target.value) })} />
-              <select className="input" value={createTransactionData.type} onChange={e => setCreateTransactionData({ ...createTransactionData, type: e.target.value })}>
-                <option value="income">Entrata</option>
-                <option value="expense">Uscita</option>
-              </select>
-              <select className="input" value={createTransactionData.area} onChange={e => setCreateTransactionData({ ...createTransactionData, area: e.target.value })}>
-                <option value="">Seleziona Area</option>
-                {areas.map(area => <option key={area.id} value={area.id}>{area.name}</option>)}
-              </select>
-              <input className="input" placeholder="Categoria" value={createTransactionData.category} onChange={e => setCreateTransactionData({ ...createTransactionData, category: e.target.value })} />
-              <input className="input" placeholder="Cliente" value={createTransactionData.client} onChange={e => setCreateTransactionData({ ...createTransactionData, client: e.target.value })} />
-              <input className="input" placeholder="Stato" value={createTransactionData.status} onChange={e => setCreateTransactionData({ ...createTransactionData, status: e.target.value })} />
-              <input className="input" placeholder="Numero Fattura" value={createTransactionData.invoiceNumber} onChange={e => setCreateTransactionData({ ...createTransactionData, invoiceNumber: e.target.value })} />
-              {createTransactionError && <div className="text-red-500 text-sm">{createTransactionError}</div>}
-            </div>
-            <div className="flex space-x-2 mt-4">
-              <Button variant="default" loading={creatingTransaction} className="flex-1" onClick={handleCreateTransaction}>Crea</Button>
-              <Button variant="outline" className="flex-1" onClick={() => setShowCreateTransactionModal(false)}>Annulla</Button>
-            </div>
-          </Dialog.Content>
-        </Dialog>
+      {/* Category Breakdown */}
+      {categoryBreakdown.length > 0 && (
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4">Analisi per Categoria</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {categoryBreakdown.map(({ category, income, expenses, net }) => (
+              <div key={category} className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">{category}</h4>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Entrate:</span>
+                    <span className="text-green-600 font-medium">€{income.toLocaleString('it-IT')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Uscite:</span>
+                    <span className="text-red-600 font-medium">€{expenses.toLocaleString('it-IT')}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1">
+                    <span className="text-gray-900 font-medium">Netto:</span>
+                    <span className={`font-bold ${
+                      net >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      €{net.toLocaleString('it-IT')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
-      {showEditTransactionModal && editTransactionData && (
-        <Dialog open={showEditTransactionModal} onOpenChange={setShowEditTransactionModal}>
-          <Dialog.Content>
-            <Dialog.Title>Modifica Transazione</Dialog.Title>
-            <div className="space-y-2">
-              <input className="input" placeholder="Data" type="date" value={editTransactionData.date} onChange={e => setEditTransactionData({ ...editTransactionData, date: e.target.value })} />
-              <input className="input" placeholder="Descrizione" value={editTransactionData.description} onChange={e => setEditTransactionData({ ...editTransactionData, description: e.target.value })} />
-              <input className="input" placeholder="Importo" type="number" value={editTransactionData.amount} onChange={e => setEditTransactionData({ ...editTransactionData, amount: Number(e.target.value) })} />
-              <select className="input" value={editTransactionData.type} onChange={e => setEditTransactionData({ ...editTransactionData, type: e.target.value })}>
-                <option value="income">Entrata</option>
-                <option value="expense">Uscita</option>
-              </select>
-              <select className="input" value={editTransactionData.area} onChange={e => setEditTransactionData({ ...editTransactionData, area: e.target.value })}>
-                <option value="">Seleziona Area</option>
-                {areas.map(area => <option key={area.id} value={area.id}>{area.name}</option>)}
-              </select>
-              <input className="input" placeholder="Categoria" value={editTransactionData.category} onChange={e => setEditTransactionData({ ...editTransactionData, category: e.target.value })} />
-              <input className="input" placeholder="Cliente" value={editTransactionData.client} onChange={e => setEditTransactionData({ ...editTransactionData, client: e.target.value })} />
-              <input className="input" placeholder="Stato" value={editTransactionData.status} onChange={e => setEditTransactionData({ ...editTransactionData, status: e.target.value })} />
-              <input className="input" placeholder="Numero Fattura" value={editTransactionData.invoiceNumber} onChange={e => setEditTransactionData({ ...editTransactionData, invoiceNumber: e.target.value })} />
-              {editTransactionError && <div className="text-red-500 text-sm">{editTransactionError}</div>}
-            </div>
-            <div className="flex space-x-2 mt-4">
-              <Button variant="default" loading={savingTransactionEdit} className="flex-1" onClick={handleSaveEditTransaction}>Salva</Button>
-              <Button variant="outline" className="flex-1" onClick={() => setShowEditTransactionModal(false)}>Annulla</Button>
-            </div>
-          </Dialog.Content>
-        </Dialog>
+
+      {/* Transactions List */}
+      {filteredTransactions.length === 0 ? (
+        <Card className="p-8 text-center">
+          <div className="text-gray-500 mb-4">
+            {searchTerm || typeFilter || categoryFilter || areaFilter || dateFilter
+              ? 'Nessuna transazione trovata per i filtri correnti.'
+              : 'Nessuna transazione presente.'}
+          </div>
+          {!searchTerm && !typeFilter && !categoryFilter && !areaFilter && !dateFilter && (
+            <Button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Aggiungi la prima transazione
+            </Button>
+          )}
+        </Card>
+      ) : viewMode === 'table' ? (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Data
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Descrizione
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Categoria
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Area
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Importo
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Azioni
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTransactions.map((transaction) => (
+                  <tr key={transaction.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {new Date(transaction.date).toLocaleDateString('it-IT')}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      <div className="font-medium">{transaction.description}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        {transaction.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        transaction.area === 'studio' ? 'bg-blue-100 text-blue-800' :
+                        transaction.area === 'prizm' ? 'bg-purple-100 text-purple-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {transaction.area === 'studio' && 'Studio'}
+                        {transaction.area === 'prizm' && 'Prizm'}
+                        {transaction.area === 'statale' && 'Statale'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <span className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
+                        {transaction.type === 'income' ? '+' : '-'}€{transaction.amount.toLocaleString('it-IT')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-1">
+                        <button
+                          onClick={() => openEditModal(transaction)}
+                          className="p-1 text-gray-400 hover:text-yellow-600 transition-colors"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTransaction(transaction.id)}
+                          className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredTransactions.map((transaction) => (
+            <Card key={transaction.id} className="p-4 hover:shadow-lg transition-shadow">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">{transaction.description}</div>
+                  <div className="text-sm text-gray-500">
+                    {new Date(transaction.date).toLocaleDateString('it-IT')}
+                  </div>
+                </div>
+                <div className="flex space-x-1">
+                  <button
+                    onClick={() => openEditModal(transaction)}
+                    className="p-1 text-gray-400 hover:text-yellow-600 transition-colors"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTransaction(transaction.id)}
+                    className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  {transaction.category}
+                </span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  transaction.area === 'studio' ? 'bg-blue-100 text-blue-800' :
+                  transaction.area === 'prizm' ? 'bg-purple-100 text-purple-800' :
+                  'bg-green-100 text-green-800'
+                }`}>
+                  {transaction.area === 'studio' && 'Studio'}
+                  {transaction.area === 'prizm' && 'Prizm'}
+                  {transaction.area === 'statale' && 'Statale'}
+                </span>
+              </div>
+              <div className={`text-xl font-bold ${
+                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {transaction.type === 'income' ? '+' : '-'}€{transaction.amount.toLocaleString('it-IT')}
+              </div>
+            </Card>
+          ))}
+        </div>
       )}
-      {showDeleteTransactionModal && (
-        <Dialog open={showDeleteTransactionModal} onOpenChange={setShowDeleteTransactionModal}>
-          <Dialog.Content>
-            <Dialog.Title>Elimina Transazione</Dialog.Title>
-            <p>Sei sicuro di voler eliminare questa transazione? L'operazione non è reversibile.</p>
-            {deleteTransactionError && <div className="text-red-500 text-sm">{deleteTransactionError}</div>}
-            <div className="flex space-x-2 mt-4">
-              <Button variant="destructive" loading={deletingTransaction} className="flex-1" onClick={handleDeleteTransaction}>Elimina</Button>
-              <Button variant="outline" className="flex-1" onClick={() => setShowDeleteTransactionModal(false)}>Annulla</Button>
+
+      {/* Create Transaction Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4">Nuova Transazione</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData({...formData, type: e.target.value as 'income' | 'expense'})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="income">Entrata</option>
+                  <option value="expense">Uscita</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Importo</label>
+                <input
+                  type="number"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value) || 0})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                <input
+                  type="text"
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Es. Consulenza, Software, Marketing..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder="Descrizione dettagliata..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
+                <select
+                  value={formData.area}
+                  onChange={(e) => setFormData({...formData, area: e.target.value as 'studio' | 'prizm' | 'statale'})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="studio">Studio</option>
+                  <option value="prizm">Prizm</option>
+                  <option value="statale">Statale</option>
+                </select>
+              </div>
             </div>
-          </Dialog.Content>
-        </Dialog>
+            <div className="flex gap-2 mt-6">
+              <Button
+                onClick={handleCreateTransaction}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                Crea Transazione
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowCreateModal(false)
+                  resetForm()
+                }}
+                variant="outline"
+                className="flex-1"
+              >
+                Annulla
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Transaction Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4">Modifica Transazione</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData({...formData, type: e.target.value as 'income' | 'expense'})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="income">Entrata</option>
+                  <option value="expense">Uscita</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Importo</label>
+                <input
+                  type="number"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value) || 0})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                <input
+                  type="text"
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Es. Consulenza, Software, Marketing..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descrizione</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder="Descrizione dettagliata..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
+                <select
+                  value={formData.area}
+                  onChange={(e) => setFormData({...formData, area: e.target.value as 'studio' | 'prizm' | 'statale'})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="studio">Studio</option>
+                  <option value="prizm">Prizm</option>
+                  <option value="statale">Statale</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-6">
+              <Button
+                onClick={handleEditTransaction}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                Salva Modifiche
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowEditModal(false)
+                  setEditingTransaction(null)
+                  resetForm()
+                }}
+                variant="outline"
+                className="flex-1"
+              >
+                Annulla
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
 }
+
+export default Finanze

@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react'
-import { Plus, Search, Edit, Trash2, TrendingUp, TrendingDown, Calendar, Euro, Filter, Download } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Search, Edit, Trash2, TrendingUp, TrendingDown, Calendar, Euro, Download } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { AddTransactionModal } from '@/components/modals/AddTransactionModal'
-import { transactionService, clientService, projectService } from '@/lib/database'
-import type { Transaction, Client, Project } from '@/lib/supabase'
+import { transactionService, projectService } from '@/lib/database'
+import type { Transaction, Project } from '@/lib/supabase'
 
 export function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([])
-  const [clients, setClients] = useState<Client[]>([])
+  // clients state removed - not used in current implementation
   const [projects, setProjects] = useState<Project[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
+  // Status filter removed - status property not available in Transaction interface
   const [categoryFilter, setCategoryFilter] = useState('')
   const [dateFilter, setDateFilter] = useState('')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -26,18 +26,16 @@ export function Transactions() {
 
   useEffect(() => {
     filterTransactions()
-  }, [transactions, searchTerm, typeFilter, statusFilter, categoryFilter, dateFilter])
+  }, [transactions, searchTerm, typeFilter, categoryFilter, dateFilter])
 
   const loadData = async () => {
     try {
       setLoading(true)
-      const [transactionsData, clientsData, projectsData] = await Promise.all([
+      const [transactionsData, projectsData] = await Promise.all([
         transactionService.getAll(),
-        clientService.getAll(),
         projectService.getAll()
       ])
       setTransactions(transactionsData)
-      setClients(clientsData)
       setProjects(projectsData)
     } catch (err) {
       setError('Errore nel caricamento delle transazioni')
@@ -52,9 +50,8 @@ export function Transactions() {
 
     if (searchTerm) {
       filtered = filtered.filter(transaction =>
-        transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        transaction.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        transaction.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase())
+        (transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+        (transaction.category?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
       )
     }
 
@@ -62,9 +59,7 @@ export function Transactions() {
       filtered = filtered.filter(transaction => transaction.type === typeFilter)
     }
 
-    if (statusFilter) {
-      filtered = filtered.filter(transaction => transaction.status === statusFilter)
-    }
+    // Status filter removed - status property not available in Transaction interface
 
     if (categoryFilter) {
       filtered = filtered.filter(transaction => transaction.category === categoryFilter)
@@ -102,37 +97,9 @@ export function Transactions() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800'
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'failed':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
+  // Status functions removed - status property not available in Transaction interface
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'Completata'
-      case 'pending':
-        return 'In Attesa'
-      case 'failed':
-        return 'Fallita'
-      default:
-        return status
-    }
-  }
-
-  const getClientName = (clientId?: string) => {
-    if (!clientId) return null
-    const client = clients.find(c => c.id === clientId)
-    return client ? client.name : 'Cliente sconosciuto'
-  }
+  // getClientName function removed - not used in current implementation
 
   const getProjectName = (projectId?: string) => {
     if (!projectId) return null
@@ -142,18 +109,17 @@ export function Transactions() {
 
   // Calculate statistics
   const totalIncome = filteredTransactions
-    .filter(t => t.type === 'income' && t.status === 'completed')
+    .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0)
 
   const totalExpenses = filteredTransactions
-    .filter(t => t.type === 'expense' && t.status === 'completed')
+    .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0)
 
   const netProfit = totalIncome - totalExpenses
 
-  const pendingAmount = filteredTransactions
-    .filter(t => t.status === 'pending')
-    .reduce((sum, t) => sum + t.amount, 0)
+  // Pending amount calculation removed - status property not available
+  const pendingAmount = 0
 
   // Get unique categories for filter
   const categories = [...new Set(transactions.map(t => t.category))].sort()
@@ -214,16 +180,7 @@ export function Transactions() {
             <option value="income">Entrate</option>
             <option value="expense">Uscite</option>
           </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">Tutti gli status</option>
-            <option value="completed">Completata</option>
-            <option value="pending">In Attesa</option>
-            <option value="failed">Fallita</option>
-          </select>
+          {/* Status filter removed - status property not available in Transaction interface */}
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
@@ -244,7 +201,6 @@ export function Transactions() {
             onClick={() => {
               setSearchTerm('')
               setTypeFilter('')
-              setStatusFilter('')
               setCategoryFilter('')
               setDateFilter('')
             }}
@@ -309,9 +265,9 @@ export function Transactions() {
       {filteredTransactions.length === 0 ? (
         <Card className="p-8 text-center">
           <div className="text-gray-500">
-            {searchTerm || typeFilter || statusFilter || categoryFilter || dateFilter ? 'Nessuna transazione trovata per i filtri correnti.' : 'Nessuna transazione presente.'}
+            {searchTerm || typeFilter || categoryFilter || dateFilter ? 'Nessuna transazione trovata per i filtri correnti.' : 'Nessuna transazione presente.'}
           </div>
-          {!searchTerm && !typeFilter && !statusFilter && !categoryFilter && !dateFilter && (
+          {!searchTerm && !typeFilter && !categoryFilter && !dateFilter && (
             <Button
               onClick={() => setIsAddModalOpen(true)}
               className="mt-4 bg-blue-600 hover:bg-blue-700"
@@ -358,9 +314,7 @@ export function Transactions() {
                     <td className="px-6 py-4 text-sm text-gray-900">
                       <div>
                         <div className="font-medium">{transaction.description}</div>
-                        {transaction.invoice_number && (
-                          <div className="text-xs text-gray-500">Fattura: {transaction.invoice_number}</div>
-                        )}
+                        {/* Invoice number not available in Transaction interface */}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -372,14 +326,14 @@ export function Transactions() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
-                        {getStatusText(transaction.status)}
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {transaction.type === 'income' ? 'Entrata' : 'Uscita'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       <div>
-                        {getClientName(transaction.client_id) && (
-                          <div className="text-sm">{getClientName(transaction.client_id)}</div>
+                        {getProjectName(transaction.project_id) && (
+                          <div className="text-sm">{getProjectName(transaction.project_id)}</div>
                         )}
                         {getProjectName(transaction.project_id) && (
                           <div className="text-xs text-gray-500">{getProjectName(transaction.project_id)}</div>
