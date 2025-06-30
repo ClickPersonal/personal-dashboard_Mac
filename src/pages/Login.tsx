@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function Login() {
   const { signIn, loading } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -13,7 +14,12 @@ export default function Login() {
     setError('');
     const result = await signIn(email, password);
     const error = result?.error;
-    if (error) setError(error?.message || 'An error occurred');
+    if (error) {
+      setError(error?.message || 'An error occurred');
+    } else {
+      // Reindirizzamento automatico alla dashboard dopo login riuscito
+      navigate('/');
+    }
   };
 
   return (

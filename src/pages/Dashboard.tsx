@@ -28,11 +28,7 @@ interface DashboardStats {
     prizm: number;
     statale: number;
   }>;
-  areaDistribution: Array<{
-    name: string;
-    value: number;
-    color: string;
-  }>;
+
   monthlyTrend: Array<{
     month: string;
     total: number;
@@ -46,9 +42,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   LineChart,
   Line,
 } from 'recharts'
@@ -73,11 +66,7 @@ const defaultRevenueData = [
   { month: 'Giu', studio: 0, prizm: 0, statale: 0 },
 ]
 
-const defaultAreaDistribution = [
-  { name: 'Sokey Studio', value: 0, color: '#f97316' },
-  { name: 'Prizm', value: 0, color: '#3b82f6' },
-  { name: 'Lavoro Statale', value: 0, color: '#22c55e' },
-]
+
 
 
 
@@ -102,7 +91,7 @@ export default function Dashboard() {
         recentActivities: (data as any).recentActivities || [],
         upcomingTasks: (data as any).upcomingTasks || [],
         monthlyRevenue: (data as any).monthlyRevenue || defaultRevenueData,
-        areaDistribution: (data as any).areaDistribution || defaultAreaDistribution,
+
         monthlyTrend: (data as any).monthlyTrend || []
       })
     } catch (err) {
@@ -155,7 +144,7 @@ export default function Dashboard() {
   const recentActivities = dashboardData?.recentActivities || []
   const upcomingTasks = dashboardData?.upcomingTasks || []
   const revenueData = dashboardData?.monthlyRevenue || defaultRevenueData
-  const areaDistribution = dashboardData?.areaDistribution || defaultAreaDistribution
+
   const monthlyTrend = dashboardData?.monthlyTrend || []
 
   if (loading) {
@@ -271,35 +260,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Area Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribuzione Ricavi</CardTitle>
-            <CardDescription>
-              Percentuale di contributo per ogni area
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={areaDistribution}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}%`}
-                >
-                  {areaDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+
       </div>
 
       {/* Bottom Row */}

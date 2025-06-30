@@ -28,25 +28,17 @@ const navigationItems = [
     bgColor: 'hover:bg-gray-100',
   },
   {
-    name: 'Gestione',
-    href: '/management',
-    icon: FolderOpen,
-    color: 'text-blue-600 hover:text-blue-700',
-    bgColor: 'hover:bg-blue-50',
-    subItems: [
-      { name: 'Clienti', href: '/clients', icon: Users },
-      { name: 'Progetti', href: '/projects', icon: FolderOpen },
-      { name: 'Task', href: '/tasks', icon: CheckSquare },
-      { name: 'Proposte', href: '/proposals', icon: FileText },
-      { name: 'Transazioni', href: '/transactions', icon: CreditCard },
-    ],
-  },
-  {
     name: 'Sokey Studio',
     href: '/studio',
     icon: Camera,
     color: 'text-studio-600 hover:text-studio-700',
     bgColor: 'hover:bg-studio-50',
+    subItems: [
+      { name: 'Clienti', href: '/studio/clients', icon: Users },
+      { name: 'Progetti', href: '/studio/projects', icon: FolderOpen },
+      { name: 'Task', href: '/studio/tasks', icon: CheckSquare },
+      { name: 'Proposte', href: '/studio/proposals', icon: FileText },
+    ],
   },
   {
     name: 'Prizm',
@@ -54,6 +46,10 @@ const navigationItems = [
     icon: Lightbulb,
     color: 'text-prizm-600 hover:text-prizm-700',
     bgColor: 'hover:bg-prizm-50',
+    subItems: [
+      { name: 'Progetti', href: '/prizm/projects', icon: FolderOpen },
+      { name: 'Task', href: '/prizm/tasks', icon: CheckSquare },
+    ],
   },
   {
     name: 'Lavoro Statale',
@@ -61,6 +57,10 @@ const navigationItems = [
     icon: Building2,
     color: 'text-statale-600 hover:text-statale-700',
     bgColor: 'hover:bg-statale-50',
+    subItems: [
+      { name: 'Progetti', href: '/statale/projects', icon: FolderOpen },
+      { name: 'Task', href: '/statale/tasks', icon: CheckSquare },
+    ],
   },
   {
     name: 'Finanze',
@@ -68,6 +68,10 @@ const navigationItems = [
     icon: Euro,
     color: 'text-finanze-600 hover:text-finanze-700',
     bgColor: 'hover:bg-finanze-50',
+    subItems: [
+      { name: 'Transazioni', href: '/finanze/transactions', icon: CreditCard },
+      { name: 'Report', href: '/finanze/reports', icon: TrendingUp },
+    ],
   },
 ]
 
@@ -120,7 +124,7 @@ export default function Sidebar({ isOpen, currentPath }: SidebarProps) {
               </Link>
 
               {/* Sub-items */}
-              {item.subItems && isOpen && (currentPath.startsWith('/clients') || currentPath.startsWith('/projects') || currentPath.startsWith('/tasks') || currentPath.startsWith('/proposals') || currentPath.startsWith('/transactions') ? item.name === 'Gestione' : isActive) && (
+              {item.subItems && isOpen && isActive && (
                 <div className="ml-6 mt-2 space-y-1">
                   {item.subItems.map((subItem) => {
                     const SubIcon = subItem.icon

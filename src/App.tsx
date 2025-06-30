@@ -29,18 +29,32 @@ function App() {
           <Layout>
             <Routes>
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              
+              {/* Sokey Studio Routes */}
               <Route path="/studio" element={<ProtectedRoute><SokeyStudio /></ProtectedRoute>} />
-              <Route path="/studio/client/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
-              <Route path="/studio/project/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
+              <Route path="/studio/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+              <Route path="/studio/clients/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
+              <Route path="/studio/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+              <Route path="/studio/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
+              <Route path="/studio/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+              <Route path="/studio/proposals" element={<ProtectedRoute><Proposals /></ProtectedRoute>} />
+              
+              {/* Prizm Routes */}
               <Route path="/prizm" element={<ProtectedRoute><Prizm /></ProtectedRoute>} />
-              <Route path="/prizm/project/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
+              <Route path="/prizm/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+              <Route path="/prizm/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
+              <Route path="/prizm/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+              
+              {/* Lavoro Statale Routes */}
               <Route path="/statale" element={<ProtectedRoute><LavoroStatale /></ProtectedRoute>} />
+              <Route path="/statale/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+              <Route path="/statale/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
+              <Route path="/statale/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+              
+              {/* Finanze Routes */}
               <Route path="/finanze" element={<ProtectedRoute><Finanze /></ProtectedRoute>} />
-              <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
-              <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-              <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-              <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-              <Route path="/proposals" element={<ProtectedRoute><Proposals /></ProtectedRoute>} />
+              <Route path="/finanze/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+              <Route path="/finanze/reports" element={<ProtectedRoute><Finanze /></ProtectedRoute>} />
               <Route path="/supabase-test" element={<ProtectedRoute><SupabaseTest /></ProtectedRoute>} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
