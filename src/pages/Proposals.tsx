@@ -112,7 +112,7 @@ export function Proposals() {
 
   const handleUpdateStatus = async (proposal: Proposal, newStatus: string) => {
     try {
-      const updatedProposal = await proposalService.update(proposal.id, { status: newStatus })
+      const updatedProposal = await proposalService.update(proposal.id, { status: newStatus as 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' })
       setProposals(prev => prev.map(p => p.id === proposal.id ? updatedProposal : p))
     } catch (err) {
       console.error('Error updating proposal status:', err)
