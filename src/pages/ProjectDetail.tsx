@@ -679,7 +679,7 @@ function addNotification(message:string, type:'info'|'success'|'warning'|'error'
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
                               {task.priority}
                             </span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskStatusColor(task.status)}`}>
                               {task.status}
                             </span>
                           </div>
@@ -714,6 +714,213 @@ function addNotification(message:string, type:'info'|'success'|'warning'|'error'
       )}
 
       {activeTab === 'files' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-foreground">File del Progetto</h2>
+            <Button>
+              <Upload className="w-4 h-4 mr-2" />
+              Carica File
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {files.map((file) => {
+              const FileIcon = getFileIcon(file.type)
+              
+              return (
+                <Card key={file.id} className="card-hover">
+                  <CardContent className="p-6">
+                    <div className="flex items-start space-x-4 mb-4">
+                      <div className="p-3 rounded-lg bg-studio-50">
+                        <FileIcon className="w-6 h-6 text-studio-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-foreground truncate">{file.name}</h3>
+                        <p className="text-sm text-muted-foreground">{file.size}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Caricato il {formatDate(file.uploadDate)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(file.status)}`}>
+                        {file.status}
+                      </span>
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                      <Button size="sm" variant="outline" className="flex-1">
+                        <Eye className="w-4 h-4 mr-1" />
+                        Visualizza
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        <LinkIcon className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'timeline' && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold text-foreground">Timeline del Progetto</h2>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                {projectData.timeline.map((event, index) => (
+                  <div key={index} className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className={`w-4 h-4 rounded-full ${
+                        event.status === 'completed' ? 'bg-green-500' : 'bg-gray-300'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-foreground">{event.event}</h3>
+                        <span className="text-sm text-muted-foreground">{event.time}</span>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      {event.status === 'completed' ? (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <Clock className="w-5 h-5 text-gray-400" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'comments' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-foreground">Commenti e Feedback</h2>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Nuovo Commento
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            {comments.map((comment) => (
+              <Card key={comment.id}>
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 rounded-lg bg-studio-50">
+                      <User className="w-5 h-5 text-studio-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <h3 className="font-semibold text-foreground">{comment.author}</h3>
+                          <p className="text-sm text-muted-foreground">{comment.role}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">{formatDate(comment.date)}</p>
+                          {comment.rating && (
+                            <div className="flex items-center space-x-1 mt-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-4 h-4 ${
+                                    i < comment.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-sm text-foreground">{comment.content}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+useEffect(() => {
+  async function fetchTasks() {
+    setLoadingTasks(true)
+    setErrorTasks("")
+    const { data, error } = await supabase.from('tasks').select('*').eq('project_id', projectId)
+    if (error) setErrorTasks(error.message)
+    setTasks(data || [])
+    setLoadingTasks(false)
+  }
+  if (projectId) fetchTasks()
+}, [projectId])
+{activeTab === 'tasks' && (
+  <div className="space-y-6">
+    <div className="flex items-center justify-between">
+      <h2 className="text-xl font-semibold text-foreground">Task del Progetto</h2>
+      <Button>
+        <Plus className="w-4 h-4 mr-2" />
+        Nuovo Task
+      </Button>
+    </div>
+    {loadingTasks ? (
+      <div className="py-8 text-center text-muted-foreground">Caricamento task...</div>
+    ) : errorTasks ? (
+      <div className="py-8 text-center text-red-500">Errore: {errorTasks}</div>
+    ) : tasks.length === 0 ? (
+      <div className="py-8 text-center text-muted-foreground">Nessun task trovato.</div>
+    ) : (
+    <div className="space-y-4">
+      {tasks.map((task) => {
+        const TaskIcon = getTaskIcon(task.category)
+        return (
+          <Card key={task.id}>
+            <CardContent className="p-6">
+              <div className="flex items-start space-x-4">
+                <div className={`p-3 rounded-lg ${getTaskColor(task.category)}`}>
+                  <TaskIcon className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-foreground">{task.title}</h3>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                        {task.priority}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskStatusColor(task.status)}`}>
+                        {task.status}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground mb-1">{task.description}</p>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <span>Assegnato a: {task.assignee}</span>
+                    <span>Scadenza: {formatDate(task.dueDate)}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )})}
+      </div>
+    </div>
+  )}
+}, [projectId])
+{activeTab === 'files' && (
   <div className="space-y-6">
     <div className="flex items-center justify-between">
       <h2 className="text-xl font-semibold text-foreground">File del Progetto</h2>
@@ -1402,7 +1609,7 @@ export default function ProjectDetail() {
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
                               {task.priority}
                             </span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskStatusColor(task.status)}`}>
                               {task.status}
                             </span>
                           </div>
@@ -1459,166 +1666,4 @@ export default function ProjectDetail() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-foreground truncate">{file.name}</h3>
-                        <p className="text-sm text-muted-foreground">{file.size}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Caricato il {formatDate(file.uploadDate)}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(file.status)}`}>
-                        {file.status}
-                      </span>
-                    </div>
-                    
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline" className="flex-1">
-                        <Eye className="w-4 h-4 mr-1" />
-                        Visualizza
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <LinkIcon className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'timeline' && (
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-foreground">Timeline del Progetto</h2>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="space-y-6">
-                {projectData.timeline.map((event, index) => (
-                  <div key={index} className="flex items-center space-x-4">
-                    <div className="flex-shrink-0">
-                      <div className={`w-4 h-4 rounded-full ${
-                        event.status === 'completed' ? 'bg-green-500' : 'bg-gray-300'
-                      }`} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium text-foreground">{event.event}</h3>
-                        <span className="text-sm text-muted-foreground">{event.time}</span>
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0">
-                      {event.status === 'completed' ? (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <Clock className="w-5 h-5 text-gray-400" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === 'comments' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-foreground">Commenti e Feedback</h2>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Nuovo Commento
-            </Button>
-          </div>
-          
-          <div className="space-y-4">
-            {comments.map((comment) => (
-              <Card key={comment.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="p-3 rounded-lg bg-studio-50">
-                      <User className="w-5 h-5 text-studio-600" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <h3 className="font-semibold text-foreground">{comment.author}</h3>
-                          <p className="text-sm text-muted-foreground">{comment.role}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-muted-foreground">{formatDate(comment.date)}</p>
-                          {comment.rating && (
-                            <div className="flex items-center space-x-1 mt-1">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`w-4 h-4 ${
-                                    i < comment.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-sm text-foreground">{comment.content}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-useEffect(() => {
-  async function fetchTasks() {
-    setLoadingTasks(true)
-    setErrorTasks("")
-    const { data, error } = await supabase.from('tasks').select('*').eq('project_id', projectId)
-    if (error) setErrorTasks(error.message)
-    setTasks(data || [])
-    setLoadingTasks(false)
-  }
-  if (projectId) fetchTasks()
-}, [projectId])
-{activeTab === 'tasks' && (
-  <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <h2 className="text-xl font-semibold text-foreground">Task del Progetto</h2>
-      <Button>
-        <Plus className="w-4 h-4 mr-2" />
-        Nuovo Task
-      </Button>
-    </div>
-    {loadingTasks ? (
-      <div className="py-8 text-center text-muted-foreground">Caricamento task...</div>
-    ) : errorTasks ? (
-      <div className="py-8 text-center text-red-500">Errore: {errorTasks}</div>
-    ) : tasks.length === 0 ? (
-      <div className="py-8 text-center text-muted-foreground">Nessun task trovato.</div>
-    ) : (
-    <div className="space-y-4">
-      {tasks.map((task) => {
-        const TaskIcon = getTaskIcon(task.category)
-        return (
-          <Card key={task.id}>
-            <CardContent className="p-6">
-              <div className="flex items-start space-x-4">
-                <div className={`p-3 rounded-lg ${getTaskColor(task.category)}`}>
-                  <TaskIcon className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-foreground">{task.title}</h3>
-                    <div className="flex items-center space-x-2">
-                      <span className={`px-2
+                        <p className="text-sm
